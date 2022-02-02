@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.kosmo.jobkorea.notice.dao.ANoticeDao">
+	<select id="admNotice" resultType="kr.kosmo.jobkorea.notice.model.ANoticeModel">
+		SELECT  c.notice_id
+		       ,u.name
+		       ,c.notice_tit
+		       ,c.notice_con
+		       ,DATE_FORMAT(c.regdate, '%Y.%m.%d') AS regdate
+		       ,c.hit
+		  FROM  tb_adm_notice c left outer join tb_userinfo as u
+		    ON  c.loginId = u.loginID
+		<where>
+	     <if test="(adm_type != null) and (!adm_type.equals(''))">
+			<choose>
+				<when test="(adm_type != null) and (adm_type eq 'title'.toString())">
+					and c.notice_tit Like CONCAT('%', #{adm_key}, '%')
+				</when>
+				<when test="(adm_type != null) and (adm_type eq 'content'.toString())">
+					and c.notice_con LIKE CONCAT('%', #{adm_key}, '%')
+				</when>
+				<when test="(adm_type != null) and (adm_type eq 'all'.toString())">
+					and (c.notice_tit LIKE CONCAT('%', #{adm_key}, '%') or c.notice_con LIKE CONCAT('%', #{adm_key}, '%'))
+				</when>			
+			</choose>
+		 </if>
+	 	</where>	
+	  ORDER BY c.notice_id desc
+		 LIMIT #{pageIndex}, #{pageSize}		   
+	</select>
+	
+	<select id="admNoticeCnt" resultType="int">
+		SELECT COUNT(*)
+		  FROM  tb_adm_notice c left outer join tb_userinfo as u
+		    ON  c.loginId = u.loginID
+		  <where>
+	     <if test="(adm_type != null) and (!adm_type.equals(''))">
+			<choose>
+				<when test="(adm_type != null) and (adm_type eq 'title'.toString())">
+					and c.notice_tit Like CONCAT('%', #{adm_key}, '%')
+				</when>
+				<when test="(adm_type != null) and (adm_type eq 'content'.toString())">
+					and c.notice_con LIKE CONCAT('%', #{adm_key}, '%')
+				</when>
+				<when test="(adm_type != null) and (adm_type eq 'all'.toString())">
+					and (c.notice_tit LIKE CONCAT('%', #{adm_key}, '%') or c.notice_con LIKE CONCAT('%', #{adm_key}, '%'))
+				</when>			
+			</choose>
+		 </if>
+	 	</where>	
+	</select>
+	
+	<select id="tutNotice" resultType="kr.kosmo.jobkorea.notice.model.ANoticeModel">
+		SELECT  b.notice_id
+		       ,u.name
+		       ,b.notice_tit
+		       ,b.notice_con
+		       ,DATE_FORMAT(b.regdate, '%Y.%m.%d') AS regdate
+		       ,b.hit
+		  FROM  tb_tutor_notice b left outer join tb_userinfo as u
+		    ON  b.loginId = u.loginID
+		 <where>
+	     <if test="(tut_type != null) and (!tut_type.equals(''))">
+			<choose>
+				<when test="(tut_type != null) and (tut_type eq 'title'.toString())">
+					and b.notice_tit Like CONCAT('%', #{tut_key}, '%')
+				</when>
+				<when test="(tut_type != null) and (tut_type eq 'content'.toString())">
+					and b.notice_con LIKE CONCAT('%', #{tut_key}, '%')
+				</when>
+				<when test="(tut_type != null) and (tut_type eq 'all'.toString())">
+					and (b.notice_tit LIKE CONCAT('%', #{tut_key}, '%') or b.notice_con LIKE CONCAT('%', #{tut_key}, '%'))
+				</when>	
+				<when test="(tut_type != null) and (tut_type eq 'name'.toString())">
+					and u.name LIKE CONCAT('%', #{tut_key}, '%')
+				</when>					
+			</choose>
+		 </if>	 
+		 </where>
+	  ORDER BY b.notice_id desc
+		 LIMIT #{pageIndex}, #{pageSize}		   
+	</select>
+	
+	<select id="tutNoticeCnt" resultType="int">
+		SELECT  COUNT(*)
+		  FROM  tb_tutor_notice b left outer join tb_userinfo as u
+		    ON  b.loginId = u.loginID
+		  <where>
+	     <if test="(tut_type != null) and (!tut_type.equals(''))">
+			<choose>
+				<when test="(tut_type != null) and (tut_type eq 'title'.toString())">
+					and b.notice_tit Like CONCAT('%', #{tut_key}, '%')
+				</when>
+				<when test="(tut_type != null) and (tut_type eq 'content'.toString())">
+					and b.notice_con LIKE CONCAT('%', #{tut_key}, '%')
+				</when>
+				<when test="(tut_type != null) and (tut_type eq 'all'.toString())">
+					and (b.notice_tit LIKE CONCAT('%', #{tut_key}, '%') or b.notice_con LIKE CONCAT('%', #{tut_key}, '%'))
+				</when>	
+				<when test="(tut_type != null) and (tut_type eq 'name'.toString())">
+					and u.name LIKE CONCAT('%', #{tut_key}, '%')
+				</when>					
+			</choose>
+		 </if>	 
+		 </where>
+	</select>
+	
+	<select id="admDetail" resultType="kr.kosmo.jobkorea.notice.model.ANoticeModel">
+		SELECT  u.name
+			   ,c.notice_id
+		       ,c.notice_tit
+		       ,c.notice_con
+		       ,c.loginId
+		       ,DATE_FORMAT(c.regdate, '%Y.%m.%d') AS regdate
+		       ,c.hit
+		  FROM  tb_adm_notice c left outer join tb_userinfo as u
+		    ON  c.loginId = u.loginID
+		 WHERE  c.notice_id = #{notice_id}
+	</select>
+	
+	<select id="tutDetail" resultType="kr.kosmo.jobkorea.notice.model.ANoticeModel">
+		SELECT  u.name
+			   ,b.notice_id
+		       ,b.notice_tit
+		       ,b.notice_con
+		       ,b.loginId
+		       ,DATE_FORMAT(b.regdate, '%Y.%m.%d') AS regdate
+		       ,b.hit
+		  FROM  tb_tutor_notice b left outer join tb_userinfo as u
+		    ON  b.loginId = u.loginID
+		 WHERE  b.notice_id = #{notice_id}
+	</select>
+	
+	<update id="admHit">
+		
+		update tb_adm_notice set hit = hit +1 
+		 where notice_id=#{notice_id}
+		
+	</update>
+	
+	<update id="tutHit">
+		
+		update tb_tutor_notice set hit = hit +1 
+		 where notice_id=#{notice_id}
+		
+	</update>
+	
+	<insert id="admWrite">
+		insert into tb_adm_notice (
+					 loginId
+					,notice_tit
+					,notice_con
+					,regdate	
+		) values  ( 
+					 #{loginID}
+					,#{notice_tit}
+					,#{notice_con}
+					,now()
+		)
+		
+	</insert>
+	
+	<insert id="tutWrite">
+		insert into tb_tutor_notice (
+					 loginId
+					,notice_tit
+					,notice_con
+					,regdate	
+		) values  ( 
+					 #{loginID}
+					,#{notice_tit}
+					,#{notice_con}
+					,now()
+		)
+		
+	</insert>
+	
+	<delete id="admDel">
+ 		DELETE 
+ 		  FROM tb_adm_notice 
+ 		 WHERE notice_id =#{notice_id}
+		   AND loginId = #{loginID}
+	</delete>
+	
+	<delete id="tutDel">
+ 		DELETE 
+ 		  FROM tb_tutor_notice 
+ 		 WHERE notice_id =#{notice_id}
+		   AND loginId = #{loginID}
+		
+	</delete>
+	
+	<select id="typeCheck" resultType="kr.kosmo.jobkorea.notice.model.ANoticeModel">
+		SELECT user_type
+		  FROM tb_userinfo
+		 WHERE loginID = #{loginID}
+	</select>
+	
+	<update id="admUpdate">
+		UPDATE  tb_adm_notice 
+		   SET  notice_tit = #{notice_tit}
+		       ,notice_con = #{notice_con}
+		       ,regdate = now()
+		 WHERE  loginId=#{loginID} 
+		   AND  notice_id=#{notice_id};
+		
+	</update>
+	
+	<update id="tutUpdate">
+		UPDATE  tb_tutor_notice 
+		   SET  notice_tit = #{notice_tit}
+		       ,notice_con = #{notice_con}
+		       ,regdate = now()
+		 WHERE  loginId=#{loginID} 
+		   AND  notice_id=#{notice_id};
+		
+	</update>
+
+	
+</mapper>

@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.kosmo.jobkorea.adm.dao.e_resumeControlDao">
+
+	<!-- 강의목록  -->
+	<select id="lec_List" resultType="kr.kosmo.jobkorea.adm.model.e_resumeControlModel">
+		SELECT @rownum:=@rownum+1 AS rownum
+		     , lec_id
+		     , lec_name
+		     , tutor_name
+		     , pre_pnum
+		     , DATE_FORMAT(c_st,  '%Y.%m.%d') as c_st
+		     , DATE_FORMAT(c_end ,'%Y.%m.%d') as c_end 
+		 FROM tb_lec_info
+		WHERE (@rownum:=0)=0 
+		  AND lec_name LIKE CONCAT('%', #{search}, '%') 
+	 ORDER BY lec_id, c_st
+		LIMIT #{pageIndex}, #{pageSize}
+	</select>
+	
+	<!-- 대표 목록  -->
+	<select id="C_Rpstt_List" resultType="kr.kosmo.jobkorea.adm.model.e_resumeControlModel">
+	SELECT loginID as loginId
+	     , tel
+	     , IFNULL(mail,"X") as mail
+	     , comp_name
+	     , comp_tel 
+	  FROM tb_userinfo 
+	 WHERE user_type = 'C'		
+	</select>
+		
+	<!-- 강의 목록 개수 -->
+	<select id="lec_Total" resultType="kr.kosmo.jobkorea.adm.model.e_resumeControlModel">
+		SELECT COUNT(lec_id) AS lec_Total
+		 FROM tb_lec_info
+		WHERE lec_name LIKE CONCAT('%', #{search}, '%')
+		ORDER BY c_st	 
+	</select>	
+	
+	<!-- 학생 목록  -->
+	<select id="Std_List" resultType="kr.kosmo.jobkorea.adm.model.e_resumeControlModel">
+		SELECT @rownum:=@rownum+1 AS rownum
+		     , A.loginId
+		     , A.name
+		     , A.tel
+		     , A.mail
+		     , A.rs_fname
+		     , A.rs_url
+		     , IFNULL(A.rs_fsize,0) as rs_fsize
+             , IFNULL(C.wp_state,'B') as wp_state
+		  FROM tb_userinfo A INNER JOIN tb_lecstd_info B
+            ON A.loginId = B.std_id 
+           AND B.lec_id LIKE #{lec_id} LEFT OUTER JOIN ( SELECT ey.std_id
+                                                               ,IFNULL(ey.wp_state,'B') AS wp_state
+                                                           FROM tb_employ ey ) C 
+                                                             ON B.std_id = C.std_id
+		 WHERE (@rownum:=0)=0
+      ORDER BY loginId
+		 LIMIT #{pageIndex}, #{pageSize}	 
+	</select>	
+	
+	<!-- 강의 목록 개수 -->
+	<select id="Std_Total" resultType="kr.kosmo.jobkorea.adm.model.e_resumeControlModel">
+  		SELECT COUNT(std_id) AS Std_Total
+		  FROM tb_userinfo A INNER JOIN tb_lecstd_info B
+            ON A.loginId = B.std_id 
+           AND B.lec_id LIKE #{lec_id}	 
+	</select>
+	
+	<!-- 학생  정보 -->
+	<select id="Std_Detail" resultType="kr.kosmo.jobkorea.adm.model.e_resumeControlModel">
+		SELECT @rownum:=@rownum+1 AS rownum
+		     , loginId
+		     , name
+		     , tel
+		     , birth
+		     , sex
+		     , mail
+		     , std_num
+		     , rs_fname
+		     , rs_url
+		     , rs_fsize
+		 FROM tb_userinfo
+		WHERE loginID LIKE #{stdId}
+	</select>
+	
+	<!-- 이메일  -->
+	<select id="E_Get_Mail" resultType="kr.kosmo.jobkorea.adm.model.e_resumeControlModel">
+		SELECT mail
+		 FROM tb_userinfo
+		WHERE loginID LIKE #{loginId}
+	</select>
+
+	<!-- 강의 이름 -->
+	<select id="E_lec_Name" resultType="kr.kosmo.jobkorea.adm.model.e_resumeControlModel">
+		SELECT lec_name
+		  FROM tb_lec_info
+		 WHERE lec_id LIKE #{lec_id}
+	</select>
+	
+	<!-- 학생 이름 가져오기-->
+	<select id="std_File_List" resultType="kr.kosmo.jobkorea.adm.model.e_resumeControlModel">
+		SELECT  loginID
+		      , name
+		      , rs_fname
+		      , rs_url
+		      , rs_fsize 
+		 FROM tb_userinfo
+		 WHERE loginID = #{loginId}
+	</select>	
+
+	<!--  학생 파일정보 가져오기-->
+	<select id="std_Name_List" resultType="kr.kosmo.jobkorea.adm.model.e_resumeControlModel">
+		SELECT name, loginID
+		  FROM tb_userinfo
+		 WHERE loginID = #{loginId}
+	</select>	
+	
+	<!--  회사 이름 가져오기-->
+	<select id="comp_name_List" resultType="kr.kosmo.jobkorea.adm.model.e_resumeControlModel">
+		SELECT comp_name, mail
+		  FROM tb_userinfo
+		 WHERE loginId = #{loginId}
+	</select>	
+</mapper>

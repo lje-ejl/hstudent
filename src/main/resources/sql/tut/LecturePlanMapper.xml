@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.kosmo.jobkorea.tut.dao.LecturePlanDao">
+
+	<!-- 강사의 강의목록 -->
+	<select id="tutor_lec_list" resultType="kr.kosmo.jobkorea.tut.model.LecturePlanModel">
+		select
+		lec_id,
+		lec_name,
+		DATE_FORMAT(c_st, '%Y.%m.%d') as c_st,
+		DATE_FORMAT(c_end,'%Y.%m.%d') as c_end,
+		pre_pnum,max_pnum,lec_sort
+		from tb_lec_info
+		<where>
+			tutor_id=#{tutor_id}
+			<if test="(progress != null) and (progress eq 'ing'.toString())">
+			<![CDATA[ and c_end > now() ]]>
+			</if>
+			<if test="(progress != null) and (progress eq 'end'.toString())">
+			<![CDATA[ and now() > c_end ]]>
+			</if>
+				<if test="(searchWord != null) and (searchWord != '')">
+					and lec_name Like CONCAT('%', #{searchWord}, '%')
+			</if>
+		</where>
+		<if
+			test="(pageIndex != null) and (!pageIndex.equals('')) and (pageSize != null) and (!pageSize.equals(''))">
+			LIMIT #{pageIndex}, #{pageSize}
+		</if>
+	</select>
+
+	<!-- 강의 목록 총 갯수 조회 -->
+	<select id="countList_lec" resultType="int">
+		select count(*)
+		from tb_lec_info
+		<where>
+			tutor_id=#{tutor_id}
+			<if test="(progress != null) and (progress eq 'ing'.toString())">
+			<![CDATA[ and c_end > now() ]]>
+			</if>
+			<if test="(progress != null) and (progress eq 'end'.toString())">
+			<![CDATA[ and now() > c_end ]]>
+			</if>
+			<if test="(searchWord != null) and (searchWord != '')">
+					and lec_name Like CONCAT('%', #{searchWord}, '%')
+			</if>
+		</where>
+	</select>
+	
+	
+	<!-- 모달창 강의 목록 -->
+	<select id="mlec_list" resultType="kr.kosmo.jobkorea.tut.model.LecturePlanModel">
+	SELECT lec_name,lec_id FROM tb_lec_info l
+	WHERE NOT EXISTS (select lec_id from tb_week_plan w where l.lec_id=w.lec_id)
+	and l.tutor_id=#{tutor_id}
+	</select>
+	
+
+	<!--단건 조회 -->
+	<select id="plan_one" resultType="kr.kosmo.jobkorea.tut.model.LecturePlanModel">
+		SELECT lecrm_name,loginID,
+		name, tel, mail,lec_id, tutor_id, lec_name,
+		l.lecrm_id, max_pnum,
+		pre_pnum, c_st, c_end, process_day, pre_day,
+		lec_goal, atd_plan,
+		lec_sort, tutor_name
+		FROM tb_lec_info l
+		left join tb_userinfo u
+		ON
+		u.loginID = l.tutor_id
+		left join tb_lecrm r
+		on l.lecrm_id= r.lecrm_id
+		where lec_id=#{lec_id}
+	</select>
+
+	<!--주차 목록 조회 -->
+	<select id="week_list" resultType="kr.kosmo.jobkorea.tut.model.LecturePlanModel">
+		select * from tb_week_plan
+		where lec_id=#{lec_id}
+		order by week+0
+	</select>
+
+
+	<!--강의 계획등록 -->
+	<update id="plan_register">
+		UPDATE tb_lec_info
+		SET tutor_id=#{tutor_id},
+		lec_goal = #{lec_goal},lecrm_id=#{lecrm_id},
+		atd_plan = #{atd_plan}, lec_sort =
+		#{lec_sort}
+		WHERE lec_id=#{lec_id}
+	</update>
+
+	<!--주차계획 등록 -->
+	<insert id="week_register">
+		INSERT INTO tb_week_plan
+		(lec_id, week, learn_con,
+		learn_goal)
+		VALUES (#{lec_id}, #{week}, #{learn_con}, #{learn_goal});
+	</insert>
+
+	<select id="chk_week" resultType="int">
+		SELECT count(lec_id)
+		FROM tb_week_plan where lec_id=#{lec_id} and week=#{week};
+	</select>
+
+
+	<!--주차 계획 수정 -->
+	<update id="week_up">
+		UPDATE tb_week_plan
+		SET week = #{week}, learn_con = #{learn_con}, learn_goal =
+		#{learn_goal}
+		WHERE
+		lec_id=#{lec_id} and week=#{week}
+	</update>
+
+	<!--주차 계획 삭제 -->
+	<delete id="week_del">
+		delete from tb_week_plan WHERE lec_id=#{lec_id} and
+		week=#{week}
+	</delete>
+
+</mapper>

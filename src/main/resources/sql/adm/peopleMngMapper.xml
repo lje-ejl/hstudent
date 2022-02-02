@@ -1,0 +1,358 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.kosmo.jobkorea.adm.dao.peopleMngDao">
+
+	<!-- 공통 -->
+
+	<!--회원 정지 -->
+	<update id="ban_user">
+		update tb_userinfo
+		set user_type="F"
+		where
+		loginID=#{loginID}
+	</update>
+
+
+	<!-- 회원 추가 -->
+
+	<select id="register">
+		insert into tb_userinfo (
+		loginID
+		,user_type
+		,name
+		,password
+		,tel
+		,sex
+		,birth
+		,mail
+		,addr
+		,join_date
+		,pid
+		,std_num,
+		comp_name
+		,comp_addr
+		,comp_tel
+		,comp_mail
+		) values (
+		#{loginID}
+		,#{user_type}
+		,#{name}
+		,#{password}
+		,#{tel}
+		,#{sex}
+		,STR_TO_DATE(#{birth}, '%Y%m%d')
+		,#{mail}
+		,#{addr}
+		,now()
+		,#{pid}
+		,#{std_numsel}
+		,#{comp_name}
+		,#{comp_addr}
+		,#{comp_tel}
+		,#{comp_mail}
+		)
+	</select>
+	
+	<!--유저 정보 보기  -->
+	<select id="user_info" resultType="kr.kosmo.jobkorea.login.model.RegisterInfoModel">
+		SELECT loginID, user_type,
+		name, password, sex, mail, addr, pid, std_num, rs_fname,
+		rs_url, rs_fsize, comp_name, comp_addr, comp_tel, comp_mail
+		,DATE_FORMAT(join_date, '%Y.%m.%d') as join_date,
+		DATE_FORMAT(birth, '%Y.%m.%d') as birth,
+		tel
+		FROM tb_userinfo
+		where loginID=#{loginID}
+	</select>
+
+	<!-- 학생관리 -->
+
+	<!--강의 리스트 -->
+	<select id="lec_list"
+		resultType="kr.kosmo.jobkorea.adm.model.RegisterListControlModel">
+		select
+		lec_id,
+		lec_name,
+		DATE_FORMAT(c_st, '%Y.%m.%d') as c_st,
+		DATE_FORMAT(c_end,'%Y.%m.%d') as c_end
+		from tb_lec_info
+		<if test="(searchWord_lec != null) and (!searchWord_lec.equals(''))">
+			where lec_name Like CONCAT('%',#{searchWord_lec}, '%')
+		</if>
+		<if
+			test="(pageIndex != null) and (!pageIndex.equals('')) and (pageSize != null) and (!pageSize.equals(''))">
+			LIMIT #{pageIndex}, #{pageSize}
+		</if>
+	</select>
+
+	<!-- 강의 총 갯수 조회 -->
+	<select id="countList_lec" resultType="int">
+		SELECT COUNT(lec_id) AS tot_cnt
+		FROM tb_lec_info
+		<if test="(searchWord_lec != null) and (!searchWord_lec.equals(''))">
+			where lec_name Like CONCAT('%',#{searchWord_lec}, '%')
+		</if>
+	</select>
+
+	<!--학생 목록 -->
+	<select id="std_list" resultType="kr.kosmo.jobkorea.login.model.RegisterInfoModel">
+		select
+		u.loginID,u.name,u.std_num,
+		DATE_FORMAT(u.join_date, '%Y.%m.%d') as join_date,
+		l.lec_id,li.lec_name,tel
+		FROM
+		tb_userinfo u
+		left join
+		tb_lecstd_info l
+		on u.loginID = l.std_id
+		left
+		join tb_lec_info li
+		on
+		l.lec_id=li.lec_id
+		<where>
+			u.user_type="A"
+			<if test="(lec_id != null) and (lec_id.equals('미수강'))">
+			and l.lec_id is null
+			</if>
+			<if test="(lec_id != null) and (!lec_id.equals('')) and (!lec_id.equals('미수강'))">
+			and l.lec_id=#{lec_id}
+			</if>
+			<if test="(from_date != null) and (!from_date.equals('')) and (to_date != null) and (!to_date.equals(''))">
+			and u.join_date between #{from_date} and #{to_date}
+			</if>
+			<if test="(searchKey_std!= null) and (!searchKey_std.equals(''))">
+				<choose>
+					<when
+						test="(searchKey_std != null) and (searchKey_std eq 'all'.toString())">
+						and (
+						u.name Like CONCAT('%', #{searchWord_std }, '%') or
+						u.loginID LIKE CONCAT('%', #{searchWord_std }, '%') or
+						u.tel LIKE CONCAT('%', #{searchWord_std }, '%')
+						)
+					</when>
+					<when
+						test="(searchKey_std != null) and (searchKey_std eq 'stdNm'.toString())">
+						and u.name Like CONCAT('%', #{searchWord_std }, '%')
+					</when>
+					<when
+						test="(searchKey_std != null) and (searchKey_std eq 'stdId'.toString())">
+						and u.loginID LIKE CONCAT('%', #{searchWord_std }, '%')
+					</when>
+					<when
+						test="(searchKey_std != null) and (searchKey_std eq 'tel'.toString())">
+						and u.tel LIKE CONCAT('%', #{searchWord_std }, '%')
+					</when>
+				</choose>
+			</if>
+		</where>
+		order by join_date
+		<if
+			test="(pageIndex_std != null) and (!pageIndex_std.equals('')) and (pageSize_std != null) and (!pageSize_std.equals(''))">
+			LIMIT #{pageIndex_std}, #{pageSize_std}
+		</if>
+	</select>
+
+	<!-- 학생 목록 총 갯수 조회 -->
+	<select id="countList_std" resultType="int">
+		select
+		count('loginID')
+		FROM
+		tb_userinfo u
+		left join tb_lecstd_info l
+		on u.loginID = l.std_id
+		left
+		join tb_lec_info li
+		on l.lec_id=li.lec_id
+		<where>
+			u.user_type="A"
+			<if test="(lec_id != null) and (lec_id.equals('미수강'))">
+			and l.lec_id is null
+			</if>
+			<if test="(lec_id != null) and (!lec_id.equals('')) and (!lec_id.equals('미수강'))">
+			and l.lec_id=#{lec_id}
+			</if>
+			<if test="(from_date != null) and (!from_date.equals('')) and (to_date != null) and (!to_date.equals(''))">
+			and u.join_date between #{from_date} and #{to_date}
+			</if>
+			<if test="(searchKey_std!= null) and (!searchKey_std.equals(''))">
+				<choose>
+					<when
+						test="(searchKey_std != null) and (searchKey_std eq 'all'.toString())">
+						and (
+						u.name Like CONCAT('%', #{searchWord_std }, '%') or
+						u.loginID LIKE CONCAT('%', #{searchWord_std }, '%') or
+						u.tel LIKE CONCAT('%', #{searchWord_std }, '%')
+						)
+					</when>
+					<when
+						test="(searchKey_std != null) and (searchKey_std eq 'stdNm'.toString())">
+						and u.name Like CONCAT('%', #{searchWord_std }, '%')
+					</when>
+					<when
+						test="(searchKey_std != null) and (searchKey_std eq 'stdId'.toString())">
+						and u.loginID LIKE CONCAT('%', #{searchWord_std }, '%')
+					</when>
+					<when
+						test="(searchKey_std != null) and (searchKey_std eq 'tel'.toString())">
+						and u.tel LIKE CONCAT('%', #{searchWord_std }, '%')
+					</when>
+				</choose>
+			</if>
+		</where>
+	</select>
+	
+	<!-- 학생 강의 목록 -->
+	<select id="std_lec_info"
+		resultType="kr.kosmo.jobkorea.adm.model.RegisterListControlModel">
+		select l.lec_id,li.lec_name,
+		DATE_FORMAT(li.c_st, '%Y.%m.%d') as c_st,
+		DATE_FORMAT(li.c_end, '%Y.%m.%d') as c_end
+		from tb_userinfo u
+		inner join tb_lecstd_info l
+		on u.loginID = l.std_id
+		inner
+		join tb_lec_info li
+		on l.lec_id=li.lec_id
+		where u.loginID=#{loginID}
+	</select>
+
+	<select id="std_lec_count"
+		resultType="int">
+		select count(l.std_id)
+		from tb_userinfo u
+		inner join tb_lecstd_info l
+		on u.loginID = l.std_id
+		inner
+		join tb_lec_info li
+		on l.lec_id=li.lec_id
+		where u.loginID=#{loginID}
+	</select>
+
+	<!-- 강사 관리 -->
+
+	<!--강사 목록 -->
+	<select id="tut_list" resultType="kr.kosmo.jobkorea.login.model.RegisterInfoModel">
+		select loginID,name,user_type,mail,comp_name,tel,
+		DATE_FORMAT(join_date, '%Y.%m.%d') as join_date FROM
+		tb_userinfo u
+		<where>
+			<if test="(user_type != null) and (user_type.equals(''))">
+				and user_type='b'
+			</if>
+			<if test="(user_type != null) and (!user_type.equals(''))">
+				and user_type=#{user_type}
+			</if>
+			<if test="(from_date != null) and (!from_date.equals('')) and (to_date != null) and (!to_date.equals(''))">
+			and u.join_date between #{from_date} and #{to_date}
+			</if>
+			<if test="(searchKey != null) and (!searchKey.equals(''))">
+				<choose>
+					<when
+						test="(searchKey != null) and (searchKey eq 'all'.toString())">
+						and (
+						u.name Like CONCAT('%', #{searchWord}, '%') or
+						u.loginID LIKE CONCAT('%', #{searchWord}, '%') or
+						u.tel LIKE CONCAT('%', #{searchWord}, '%')
+						)
+					</when>
+					<when
+						test="(searchKey != null) and (searchKey eq 'name'.toString())">
+						and u.name Like CONCAT('%', #{searchWord}, '%')
+					</when>
+					<when
+						test="(searchKey != null) and (searchKey eq 'id'.toString())">
+						and u.loginID LIKE CONCAT('%', #{searchWord}, '%')
+					</when>
+					<when
+						test="(searchKey != null) and (searchKey eq 'tel'.toString())">
+						and u.tel LIKE CONCAT('%', #{searchWord}, '%')
+					</when>
+				</choose>
+			</if>
+		</where>
+		order by join_date desc
+		<if test="(pageIndex != null) and (!pageIndex.equals('')) and (pageSize != null) and (!pageSize.equals(''))">
+			LIMIT #{pageIndex},#{pageSize}
+		</if>
+	</select>
+
+
+	<!--강사 목록 카운트 조회 -->
+	<select id="countList_tut" resultType="int">
+	select count(loginID)FROM
+		tb_userinfo u
+		<where>
+			<if test="(user_type != null) and (user_type.equals(''))">
+				and user_type='b'
+			</if>
+			<if test="(user_type != null) and (!user_type.equals(''))">
+				and user_type=#{user_type}
+			</if>
+			<if test="(from_date != null) and (!from_date.equals('')) and (to_date != null) and (!to_date.equals(''))">
+			and u.join_date between #{from_date} and #{to_date}
+			</if>
+			<if test="(searchKey != null) and (!searchKey.equals(''))">
+				<choose>
+					<when
+						test="(searchKey != null) and (searchKey eq 'all'.toString())">
+						and (
+						u.name Like CONCAT('%', #{searchWord}, '%') or
+						u.loginID LIKE CONCAT('%', #{searchWord}, '%') or
+						u.tel LIKE CONCAT('%', #{searchWord}, '%')
+						)
+					</when>
+					<when
+						test="(searchKey != null) and (searchKey eq 'name'.toString())">
+						and u.name Like CONCAT('%', #{searchWord}, '%')
+					</when>
+					<when
+						test="(searchKey != null) and (searchKey eq 'id'.toString())">
+						and u.loginID LIKE CONCAT('%', #{searchWord}, '%')
+					</when>
+					<when
+						test="(searchKey != null) and (searchKey eq 'tel'.toString())">
+						and u.tel LIKE CONCAT('%', #{searchWord}, '%')
+					</when>
+				</choose>
+			</if>
+		</where>
+	</select>
+
+	<!--강사 승인 -->
+	<update id="apv_tut">
+		update tb_userinfo set user_type="B"
+		where loginID=#{loginID}
+	</update>
+
+	<!--강사의 강의목록 -->
+	<select id="tlec_list"
+		resultType="kr.kosmo.jobkorea.adm.model.RegisterListControlModel">
+		select
+		li.lec_id,li.lec_name,
+		DATE_FORMAT(li.c_st, '%Y.%m.%d') as c_st,
+		DATE_FORMAT(li.c_end, '%Y.%m.%d') as c_end
+		from tb_userinfo u
+		inner join
+		tb_lec_info li
+		on u.loginID=li.tutor_id
+		where u.loginID=#{loginID}
+	</select>
+	
+	<select id="tut_lec_count" resultType="int">
+		select count(loginId)
+		from tb_userinfo u
+		inner join
+		tb_lec_info li
+		on u.loginID=li.tutor_id
+		where u.loginID=#{loginID}
+	</select>
+	<!-- 대표자 관리 -->
+	
+	<update id="ceo_up">
+		update tb_userinfo set 
+		comp_name=#{comp_name},comp_addr=#{comp_addr},
+		comp_tel=#{comp_tel},comp_mail=#{comp_mail}
+		where loginID=#{loginID}
+	</update>
+
+</mapper>

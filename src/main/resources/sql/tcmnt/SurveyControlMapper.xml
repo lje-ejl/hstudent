@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.kosmo.jobkorea.tut.dao.SurveyControlDao">
+     
+     <!-- 강의 리스트-->
+     <select id="lecture_List_Select" resultType="kr.kosmo.jobkorea.tut.model.SurveyControlModel">
+     	SELECT   @rownum:=@rownum+1 as row_num
+     	       , L.lec_id, L.tutor_id
+     	       , L.lec_name
+     	       , L.tutor_name
+		       , DATE_FORMAT( L.c_st,  '%Y.%m.%d' ) AS c_st
+		       , DATE_FORMAT( L.c_end, '%Y.%m.%d')  AS c_end
+		       , L.pre_pnum
+               , S.que_num
+               , S.que_one + S.que_two + S.que_three + S.que_four + S.que_five AS srvy_Pnum
+		  FROM   tb_lec_info L LEFT OUTER JOIN tb_srvy_static S
+                                            ON L.lec_id = S.lec_id
+                                           AND S.que_num = 1
+         WHERE   L.tutor_id LIKE #{tutor_id}
+           AND  (@rownum:=0)=0
+      ORDER BY  L.c_st DESC
+         LIMIT  #{pageIndex}, #{pageSize}
+     </select>
+     
+     <select id="survery_Detail_Select" resultType="kr.kosmo.jobkorea.tut.model.SurveyControlModel">
+	     SELECT  lec_id, lec_name, tutor_name
+		       , DATE_FORMAT( c_st,  '%Y.%m.%d') AS c_st
+		       , DATE_FORMAT( c_end, '%Y.%m.%d') AS c_end
+		       , pre_pnum, max_pnum 
+		   FROM  tb_lec_info
+		  WHERE  lec_id LIKE #{lec_id}
+     </select>
+     
+     <select id="srvy_Que_Select" resultType="kr.kosmo.jobkorea.tut.model.SurveyControlModel">
+		SELECT  A.que      
+               ,A.que_num  
+		       ,A.que_one   AS answer_1  ,B.que_one   AS sum_1
+               ,A.que_two   AS answer_2  ,B.que_two   AS sum_2
+               ,A.que_three AS answer_3  ,B.que_three AS sum_3
+               ,A.que_four  AS answer_4  ,B.que_four  AS sum_4
+               ,A.que_five  AS answer_5  ,B.que_five  AS sum_5
+		  FROM  tb_srvy_que A
+               ,tb_srvy_static B
+         WHERE  B.que_num = A.que_num 
+           AND  A.que_num = #{que_num}
+           AND  B.lec_id LIKE #{lec_id}
+     </select>
+     
+     <select id="lecture_Cnt_Select" resultType="kr.kosmo.jobkorea.tut.model.SurveyControlModel">
+	     SELECT COUNT(lec_id) AS tut_Total
+	       FROM tb_lec_info
+	      WHERE tutor_id LIKE #{tutor_id}
+     </select>
+     
+     <select id="c_srvy_Que10_Select" resultType="kr.kosmo.jobkorea.tut.model.SurveyControlModel">
+		SELECT  @rownum:=@rownum+1 as row_num
+		       ,lec_rv 
+		  FROM  tb_srvy_rv 
+		 WHERE  lec_id  LIKE #{lec_id}
+           AND  (@rownum:=0)=0
+      ORDER BY  lec_rv DESC
+         LIMIT  #{pageIndex}, #{pageSize}
+     </select>
+     
+     <select id="c_srvy_Que10_Num_Select" resultType="kr.kosmo.jobkorea.tut.model.SurveyControlModel">
+		SELECT  count(lec_rv) AS survery10_Total
+		  FROM  tb_srvy_rv 
+		 WHERE  lec_id  LIKE #{lec_id}
+     </select>
+     
+      <select id="srvy_One_Select" resultType="kr.kosmo.jobkorea.tut.model.SurveyControlModel">
+		SELECT snum, inum FROM AAA
+     </select>
+</mapper>  

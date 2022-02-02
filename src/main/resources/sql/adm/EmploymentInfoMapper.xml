@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.kosmo.jobkorea.adm.dao.EmploymentInfoDao">
+
+	<!--  취업 정보 조회  -->
+	<select id = "list_emp" resultType ="kr.kosmo.jobkorea.adm.model.EmploymentInfoModel">
+		SELECT e.employ_id
+					,u.loginId
+      				,u.std_num
+      				,u.name
+      				,e.employ_day
+      				,e.resign_day
+      				,e.comp_name
+      				,e.wp_state
+      			  	,u.tel
+		FROM tb_employ e
+		LEFT OUTER JOIN tb_userinfo u ON e.std_id = u.loginId
+		<where>
+			<if test="(searchKey != null) and (!searchKey.equals(''))">
+				<choose>
+					<when
+						test="(searchKey != null) and (searchKey eq 'all'.toString())">
+						and (u.name Like CONCAT('%', #{searchWord}, '%') OR e.comp_name LIKE CONCAT('%', #{searchWord}, '%'))
+					</when>
+	  				<when
+						test="(searchKey != null) and (searchKey eq 'sName'.toString())">
+						and u.name Like CONCAT('%', #{searchWord}, '%')
+					</when>
+					<when
+						test="(searchKey != null) and (searchKey eq 'comName'.toString())">
+						and e.comp_name LIKE CONCAT('%', #{searchWord}, '%')
+					</when>
+				</choose>
+			</if>
+		</where> 
+		 ORDER BY employ_day DESC
+	   <if test="(pageIndex != null) and (!pageIndex.equals('')) and (pageSize != null) and (!pageSize.equals(''))">
+         LIMIT #{pageIndex}, #{pageSize}
+      </if>
+	</select>
+	
+	<!-- 취업 정보 카운팅 조회 -->
+	<select id = "cnt_list_epm" resultType="int">
+		SELECT COUNT(employ_id) as total_cnt
+		FROM tb_employ e
+		LEFT OUTER JOIN tb_userinfo u ON e.std_id = u.loginId
+			<where>
+			<if test="(searchKey != null) and (!searchKey.equals(''))">
+				<choose>
+					<when
+						test="(searchKey != null) and (searchKey eq 'all'.toString())">
+						and (u.name Like CONCAT('%', #{searchWord}, '%') OR e.comp_name LIKE CONCAT('%', #{searchWord}, '%'))
+					</when>
+	  				<when
+						test="(searchKey != null) and (searchKey eq 'sName'.toString())">
+						and u.name Like CONCAT('%', #{searchWord}, '%')
+					</when>
+					<when
+						test="(searchKey != null) and (searchKey eq 'comName'.toString())">
+						and e.comp_name LIKE CONCAT('%', #{searchWord}, '%')
+					</when>
+				</choose>
+			</if>
+		</where> 
+	</select>
+
+
+	<!-- 학생 목록 조회  -->
+	<select id = "list_std" resultType = "kr.kosmo.jobkorea.login.model.RegisterInfoModel">
+		SELECT u.loginId<!-- 학번 넘기기 -->
+					,u.std_num
+		 			,u.name
+		 			,u.tel
+				  <!--   ,(CASE length(u.tel)
+				    WHEN 11 THEN CONCAT(LEFT(u.tel, 3), '-', MID(u.tel, 4, 4), '-', RIGHT(u.tel, 4))
+				    WHEN 10 THEN CONCAT(LEFT(u.tel, 3), '-', MID(u.tel, 4, 3), '-', RIGHT(u.tel, 4))
+				    END 
+				  	) AS tel -->
+              		,l.lec_name
+             	    ,DATE_FORMAT(u.join_date, '%Y.%m.%d') as join_date
+             	    ,u.comp_name
+        FROM tb_userinfo u 
+        LEFT OUTER JOIN  tb_lecstd_info le ON u.loginId =  le.std_Id
+        LEFT OUTER JOIN tb_lec_info l ON le.lec_id = l.lec_id
+        <where>
+        u.user_type='A'<!-- .equals('A')  -->
+			<if test="(searchKey2 != null) and (!searchKey2.equals(''))">
+				<choose>
+					<when
+						test="(searchKey2 != null) and (searchKey2 eq 'all'.toString())">
+						and (u.name Like CONCAT('%', #{searchWord2}, '%') OR l.lec_name LIKE CONCAT('%', #{searchWord2}, '%'))
+					</when>
+	  				<when
+						test="(searchKey2 != null) and (searchKey2 eq 's_nm'.toString())">
+						and u.name Like CONCAT('%', #{searchWord2}, '%')
+					</when>
+					<when
+						test="(searchKey2 != null) and (searchKey2 eq 'lec_nm'.toString())">
+						and l.lec_name LIKE CONCAT('%', #{searchWord2}, '%')
+					</when>
+				</choose>
+			</if>
+			
+		</where> 
+		 ORDER BY name
+        <if test="(pageIndex != null) and (!pageIndex.equals('')) and (pageSize != null) and (!pageSize.equals(''))">
+         LIMIT #{pageIndex}, #{pageSize}
+      	</if>
+	
+	</select>
+	
+	<!-- 학생 목록 카운팅 조회 -->
+	<select id = "cnt_list_std" resultType="int">
+		SELECT 
+		COUNT(u.loginId ) as total_cnt
+        FROM tb_userinfo u 
+        LEFT OUTER JOIN  tb_lecstd_info le ON u.loginId =  le.std_Id
+        LEFT OUTER JOIN tb_lec_info l ON le.lec_id = l.lec_id
+    <where>
+      u.user_type='A'
+			<if test="(searchKey2 != null) and (!searchKey2.equals(''))">
+				<choose>
+					<when
+						test="(searchKey2 != null) and (searchKey2 eq 'all'.toString())">
+						and (u.name Like CONCAT('%', #{searchWord2}, '%') OR l.lec_name LIKE CONCAT('%', #{searchWord2}, '%'))
+					</when>
+	  				<when
+						test="(searchKey2 != null) and (searchKey2 eq 's_nm'.toString())">
+						and u.name Like CONCAT('%', #{searchWord2}, '%')
+					</when>
+					<when
+						test="(searchKey2 != null) and (searchKey2 eq 'lec_nm'.toString())">
+						and l.lec_name LIKE CONCAT('%', #{searchWord2}, '%')
+					</when>
+				</choose>
+			</if>
+		</where> 
+	</select>
+	 
+	 <!-- 이력서 Insert -->
+	<insert id="insert_emp">
+	    INSERT INTO tb_employ(
+	    			std_id
+                  	,comp_name
+                   ,employ_day
+                   ,resign_day 
+                   ,wp_state
+	    ) VALUES (
+	    			#{loginID}
+	               ,#{comp_name}
+	              <if test="(employ_day != null) and (employ_day.equals(''))">
+            		null
+         		  </if>
+        		 <if test="(employ_day != null) and (!employ_day.equals(''))">
+          			#{employ_day}
+				 </if>
+	               ,
+	               <if test="(resign_day != null) and (resign_day.equals(''))">
+            		null   ,'재직중'
+         			</if>
+        		 <if test="(resign_day != null) and (!resign_day .equals(''))">
+          			#{resign_day}, '퇴사'
+				 </if>    
+	    )
+	</insert>
+	  
+	<!-- 이력서 단건 조회 -->
+	<select id="sel_emp" resultType="kr.kosmo.jobkorea.adm.model.EmploymentInfoModel">
+		SELECT  e.employ_id <!-- param값 -->
+					 ,u.loginId
+					 ,e.std_id
+					 ,u.std_num
+             		 ,u.name
+             		 ,e.comp_name
+		             ,e.wp_state
+					 ,u.tel
+		             ,DATE_FORMAT(e.employ_day, '%Y.%m.%d') as employ_day
+		             ,DATE_FORMAT(e.resign_day, '%Y.%m.%d') as resign_day
+        FROM tb_employ e
+        LEFT OUTER JOIN tb_userinfo u ON e.std_id =  u.loginId
+		WHERE e.employ_id = #{employ_id}
+		AND e.std_id =u.loginId
+	</select> 
+	
+	    <!-- 이력서 업데이트 -->
+	<update id="update_emp">
+	    UPDATE tb_employ e, tb_userinfo u
+	       	  SET e.comp_name = #{comp_name}
+              		,e.employ_day  =
+            	<if test="(employ_day != null) and (employ_day.equals(''))">
+	               	null
+	            </if>
+	           	<if test="(employ_day != null) and (!employ_day.equals(''))">
+        			#{employ_day} 
+		 		</if>
+              		,e.resign_day = 
+              	 <if test="(resign_day != null) and (resign_day.equals(''))">
+              		null  ,e.wp_state ='재직중'
+              	</if>
+              	<if test="(resign_day != null) and (!resign_day .equals(''))">
+          			#{resign_day}, e.wp_state ='퇴사'
+				 </if>    
+	    WHERE e.employ_id = #{employ_id}
+	    	AND e.std_id =u.loginId
+	</update>
+	
+    <!-- 이력서 delete -->
+ 	<delete id="del_emp">
+	    delete from tb_employ
+	    where employ_id = #{employ_id}	
+	</delete>
+	
+	<!-- 학생 단건 조회 & 프로필 -->
+	<select id="sel_std" resultType="kr.kosmo.jobkorea.login.model.RegisterInfoModel">
+		  SELECT     u.loginID
+				          ,u.std_num
+				          ,u.name
+				          ,DATE_FORMAT(u.birth, '%Y.%m.%d') as birth
+				          ,u.tel
+				          ,u.sex
+				          ,u.addr
+				          ,u.mail
+    FROM tb_userinfo u
+	WHERE u.loginId =  #{loginID}
+	
+	</select> 
+	
+	<!-- 학생이 듣는 강의 목록 조회 -->
+<select id="list_std_lec" resultType="kr.kosmo.jobkorea.adm.model.RegisterListControlModel">
+<![CDATA[
+		SELECT  l.lec_id
+             		 ,l.lec_name
+              		,DATE_FORMAT(l.c_st, '%Y.%m.%d') as c_st
+              		,DATE_FORMAT(l.c_end, '%Y.%m.%d') as c_end
+              		 ,(CASE
+				       WHEN  l.c_end < NOW() THEN '수강 완료'
+				       ELSE '수강중'
+				       END
+				       )AS state
+        			FROM tb_lec_info l
+        LEFT OUTER JOIN tb_lecstd_info le ON l.lec_id = le.lec_id
+   		LEFT OUTER JOIN tb_userinfo u  ON le.std_id =u.loginId
+		WHERE  u.loginId = #{loginID}
+		ORDER BY l.c_end DESC
+	   ]]>   
+	</select> 
+
+<select id="cnt_list_lec" resultType="int">
+	SELECT   
+	COUNT(l.lec_id )as total_cnt
+        			FROM tb_lec_info l
+        LEFT OUTER JOIN tb_lecstd_info le ON l.lec_id = le.lec_id
+   		LEFT OUTER JOIN tb_userinfo u  ON le.std_id =u.loginId
+		WHERE  u.loginId = #{loginID}
+		ORDER BY l.c_end DESC
+	</select> 
+
+<!-- 회사 list -->
+	<select id="list_comp" resultType="kr.kosmo.jobkorea.login.model.RegisterInfoModel">
+   		SELECT comp_name
+		FROM tb_userinfo
+		WHERE user_type='E'
+		ORDER BY comp_name 
+	</select>
+   <!-- SELECT  u.comp_name
+      				,e.comp_etc
+		FROM tb_employ e
+		LEFT OUTER JOIN tb_userinfo u ON e.std_id = u.loginId
+		ORDER BY comp_name  -->
+
+</mapper>

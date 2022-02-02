@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.kosmo.jobkorea.adm.dao.RegisterListControlDao">
+
+	<!-- 강의 목록 조회 -->
+	<select id="list_lec" resultType="kr.kosmo.jobkorea.adm.model.RegisterListControlModel">
+		SELECT distinct(l.lec_id)
+		              ,l.lec_name
+		              ,l.tutor_id
+		              ,t.name
+		              ,le.lecrm_id
+		              ,le.lecrm_name
+		              ,l.pre_pnum
+		              ,DATE_FORMAT(l.c_st, '%Y.%m.%d') as c_st
+		             ,DATE_FORMAT(l.c_end, '%Y.%m.%d') as c_end
+        FROM tb_lec_info l
+        LEFT OUTER JOIN tb_userinfo t ON l.tutor_id = t.loginId
+   		LEFT OUTER JOIN tb_lecrm le ON l.lecrm_id = le.lecrm_id  
+	 <where>
+			<if test="(searchKey != null) and (!searchKey.equals(''))">
+				<choose>
+					<when
+						test="(searchKey != null) and (searchKey eq 'all'.toString())">
+						and (lec_name Like CONCAT('%', #{searchWord}, '%') OR name LIKE CONCAT('%', #{searchWord}, '%'))
+					</when>
+	  				<when
+						test="(searchKey != null) and (searchKey eq 'lec_nm'.toString())">
+						and lec_name Like CONCAT('%', #{searchWord}, '%')
+					</when>
+					<when
+						test="(searchKey != null) and (searchKey eq 't_nm'.toString())">
+						and name LIKE CONCAT('%', #{searchWord}, '%')
+					</when>
+				</choose>
+			</if>
+		</where> 
+		 ORDER BY l.lec_id DESC
+	   <if test="(pageIndex != null) and (!pageIndex.equals('')) and (pageSize != null) and (!pageSize.equals(''))">
+         LIMIT #{pageIndex}, #{pageSize}
+      </if>
+	</select>
+
+
+<!-- 강의 수 조회 -->
+	<select id="cnt_list_lec" resultType="int">
+		SELECT count(
+		l.lec_name
+		)as total_cnt
+        ,t.name
+		FROM tb_lec_info l
+		LEFT OUTER JOIN tb_userinfo t ON l.tutor_id = t.loginId
+		 <where>
+			<if test="(searchKey != null) and (!searchKey.equals(''))">
+				<choose>
+					<when
+						test="(searchKey != null) and (searchKey eq 'all'.toString())">
+						and (lec_name Like CONCAT('%', #{searchWord}, '%') OR name LIKE CONCAT('%', #{searchWord}, '%'))
+					</when>
+	  				<when
+						test="(searchKey != null) and (searchKey eq 'lec_nm'.toString())">
+						and lec_name Like CONCAT('%', #{searchWord}, '%')
+					</when>
+					<when
+						test="(searchKey != null) and (searchKey eq 't_nm'.toString())">
+						and name LIKE CONCAT('%', #{searchWord}, '%')
+					</when>
+				</choose>
+			</if>
+		</where> 
+	</select>
+	
+    <!-- 학생 목록 조회  -->
+	<select id="list_std" resultType="kr.kosmo.jobkorea.login.model.RegisterInfoModel">
+		select 
+			ui.std_num,
+            li.lec_name,
+            ui.name,
+            ( ifnull(a1.cnt,0) + ifnull(a2.cnt,0) ) as cnt,
+            truncate(100-(( ifnull(a1.cnt,0) + ifnull(a2.cnt,0) ) / li.pre_day*100),0) as atd
+            
+          from tb_lecstd_info lsi
+               left outer join (
+                                select ta.std_id
+                                ,( count(*) div 3 ) as cnt  
+                                 from tb_atd ta
+                                 where (atd_state = '2' or atd_state ='3')
+                                 AND lec_id=#{lec_id}
+                                 group by ta.std_id 
+                                 ) as a1 on a1.std_id = lsi.std_id
+               left outer join (
+                                 select std_id 
+                                 ,count(*) as cnt
+                                  from tb_atd 
+                                  where atd_state = '4'
+                                  AND lec_id=#{lec_id}
+                                  group by std_id
+                                 ) as a2 on a2.std_id = lsi.std_id
+               LEFT OUTER JOIN tb_userinfo ui ON ui.loginId =  lsi.std_Id
+               left outer join (
+                                select pre_day, lec_id, lec_name
+                                from tb_lec_info
+                                ) as li on li.lec_id = lsi.lec_id
+               where lsi.lec_id = #{lec_id}
+		ORDER BY ui.name
+		LIMIT #{pageIndex}, #{pageSize} 
+	</select>
+
+	<!-- 학생 수 조회  -->
+	<select id="cnt_list_std" resultType="int">
+		SELECT COUNT(*) as total_cnt
+		FROM tb_lecstd_info
+		WHERE lec_id = #{lec_id}
+	</select>
+	
+    <!-- 과정 Insert -->
+	<insert id="insert_lec">
+	    INSERT INTO tb_lec_info(
+                   lec_name
+                   ,tutor_id
+                   ,lecrm_id 
+                   ,max_pnum
+                   ,process_day
+                   ,c_st
+                   ,c_end 
+	    ) VALUES (
+	                #{lec_name}
+	               ,#{tutor_id}
+	               ,#{lecrm_id}
+	               ,#{max_pnum}
+	               ,#{process_day},
+	              <if test="(c_st != null) and (c_st.equals(''))">
+            		null
+         		  </if>
+        		 <if test="(c_st != null) and (!c_st.equals(''))">
+        		 	#{c_st}
+				 </if>
+				 ,
+				  <if test="(c_end != null) and (c_end.equals(''))">
+            		null
+         			</if>
+        		 <if test="(c_end != null) and (!c_end.equals(''))">
+          			#{c_end}
+				 </if>                     	    
+	    )
+	</insert>
+	
+    <!-- 과정 Update -->
+    <update id="update_lec">
+	        UPDATE tb_lec_info
+	       			SET lec_name = #{lec_name}
+			              ,tutor_id = #{tutor_id}
+			              ,lecrm_id = #{lecrm_id}
+			              ,max_pnum = #{max_pnum} 
+			              ,c_st = 
+			           	<if test="(c_st != null) and (c_st.equals(''))">
+			               null
+			            </if>
+			           	<if test="(c_st != null) and (!c_st.equals(''))">
+          					#{c_st} 
+				 		</if>
+				 		,c_end=
+				 		<if test="(c_end != null) and (c_end.equals(''))">
+			               	null
+			            </if>
+			           	<if test="(c_end != null) and (!c_end.equals(''))">
+          					#{c_end} 
+				 		</if> 
+				 		 ,process_day = #{process_day}
+	     	WHERE lec_id = #{lec_id}
+	</update>	 
+	  
+    <!-- 과정 delete -->
+	<delete id="del_lec">
+	   DELETE from tb_lec_info
+	   WHERE lec_id = #{lec_id}	
+	</delete>
+  
+    <!-- 과정 단건 조회 -->
+	<select id="sel_lec" resultType="kr.kosmo.jobkorea.adm.model.RegisterListControlModel">
+		SELECT l.lec_id
+	              ,l.lec_name
+	              ,l.lecrm_id
+	              ,l.tutor_id
+	              ,t.name
+	              ,le.lecrm_name
+	              ,l.max_pnum
+	              ,l.process_day
+	              ,l.pre_pnum
+	              ,DATE_FORMAT(l.c_st, '%Y.%m.%d') as c_st
+	              ,DATE_FORMAT(l.c_end, '%Y.%m.%d') as c_end
+        FROM tb_lec_info l
+        LEFT OUTER JOIN tb_userinfo t ON l.tutor_id = t.loginId
+   		LEFT OUTER JOIN tb_lecrm le ON l.lecrm_id = le.lecrm_id  
+		WHERE l.lec_id = #{lec_id}
+	</select>
+
+   <select id="listLecrm" resultType="kr.kosmo.jobkorea.adm.model.RegisterListControlModel">
+   SELECT   distinct lecrm_id, lecrm_name
+   FROM tb_lecrm
+   </select>  
+   
+   <select id="tutor_list" resultType="kr.kosmo.jobkorea.adm.model.RegisterListControlModel">
+   SELECT  loginID, name
+   FROM tb_userinfo
+   WHERE user_type ='B';
+   </select>  
+
+
+</mapper>

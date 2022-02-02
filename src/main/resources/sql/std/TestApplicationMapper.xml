@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.kosmo.jobkorea.std.dao.TestApplicationDao">
+
+	<select id="selectTest" resultType="kr.kosmo.jobkorea.std.model.TestUser">
+		select t.test_id
+		        ,t.lec_id
+		        ,t.test_name
+		        ,t.test_sort
+		        ,DATE_FORMAT(t.test_start, '%Y.%m.%d') as test_start
+		        ,DATE_FORMAT(t.test_end, '%Y.%m.%d') as test_end
+		        ,f.lec_name
+		        ,(select tutor_name 
+		           from tb_lec_info  b
+		         where b.lec_id=t.lec_id) as tutor_name
+		        ,(select u.pass 
+		           from tb_test_user u 
+		         where u.test_id=t.test_id
+		            and u.std_id=#{loginId}) as pass
+		from tb_test t
+		JOIN tb_lec_info AS f USING (lec_id)
+	  where lec_id = (select lec_id
+                             from tb_lecstd_info
+                           where std_id=#{loginId})
+   		<if test="(searchKey != null) and (!searchKey.equals(''))">
+			<choose>
+				<when test="(searchKey != null) and (searchKey eq 'ProceedingTest'.toString())">
+					AND DATE_FORMAT(NOW(), '%Y.%m.%d') <![CDATA[>=]]>DATE_FORMAT( t.test_start, '%Y.%m.%d')
+					AND DATE_FORMAT(NOW(), '%Y.%m.%d') <![CDATA[<=]]>DATE_FORMAT( t.test_end, '%Y.%m.%d')
+				</when>
+				<when test="(searchKey != null) and (searchKey eq 'LastTest'.toString())">
+					AND  DATE_FORMAT(NOW(), '%Y.%m.%d') <![CDATA[>]]> DATE_FORMAT( t.test_end, '%Y.%m.%d')
+				</when>
+			</choose>
+		</if>
+     	LIMIT #{pageIndex}, #{pageSize}                
+	</select>
+	
+	<select id="countListComnGrpCod" resultType="int">
+	    select COUNT(1) AS tot_cnt 
+		 from tb_test t
+	   where lec_id = (select lec_id
+		                      from tb_lecstd_info
+		                    where std_id=#{loginId})
+   		<if test="(searchKey != null) and (!searchKey.equals(''))">
+			<choose>
+				<when test="(searchKey != null) and (searchKey eq 'ProceedingTest'.toString())">
+					AND DATE_FORMAT(NOW(), '%Y.%m.%d') <![CDATA[>=]]>DATE_FORMAT( t.test_start, '%Y.%m.%d')
+					AND DATE_FORMAT(NOW(), '%Y.%m.%d') <![CDATA[<=]]>DATE_FORMAT( t.test_end, '%Y.%m.%d')
+				</when>
+				<when test="(searchKey != null) and (searchKey eq 'LastTest'.toString())">
+					AND DATE_FORMAT(NOW(), '%Y.%m.%d') <![CDATA[>]]> DATE_FORMAT( t.test_end, '%Y.%m.%d')
+				</when>
+			</choose>
+		</if>
+	</select>
+	
+	<select id="applyTest" resultType="kr.kosmo.jobkorea.tut.model.TestQue">
+	     SELECT test_id
+		       ,que_num
+		       ,test_que
+		       ,que_ans
+		       ,que_ex1
+		       ,que_ex2
+		       ,que_ex3
+		       ,que_ex4
+		       ,lec_id
+		       ,lec_name
+		       ,test_name
+		       ,(select tutor_name 
+		          from tb_lec_info  b
+		        where b.lec_id=t.lec_id) as tutor_name
+	  FROM tb_test_que
+		JOIN tb_test t USING (test_id)
+		JOIN tb_lec_info USING (lec_id)
+	WHERE test_id=#{test_id}
+	</select>
+	
+	<insert id="submitTest">
+		INSERT INTO tb_test_user(std_id
+										   ,test_id
+										   ,lec_id
+										   ,test_sco
+										   ,pass
+										   ,test_ans
+										   ,test_date)
+							VALUES(#{loginId}
+										,#{test_id}
+										,#{lec_id}
+										,ROUND(#{test_sco})
+										,#{pass}
+										,#{test_ans}
+										,NOW())
+	</insert>
+	
+	<select id="selectAns" resultType="kr.kosmo.jobkorea.tut.model.TestQue">
+		SELECT test_id
+			      ,lec_id
+			      ,test_sco
+			      ,pass
+			      ,test_ans
+			      ,DATE_FORMAT(test_date, '%Y.%m.%d')
+		FROM tb_test_user
+		WHERE test_id=#{test_id}
+		AND lec_id=#{lec_id}
+		AND std_id=#{loginId}
+	</select>
+
+</mapper>

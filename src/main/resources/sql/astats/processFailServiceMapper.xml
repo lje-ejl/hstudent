@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0 //EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.kosmo.jobkorea.adm.dao.processFailDao">
+	
+	<!-- 강의 목록 뿌리기 -->
+ 	<select id="lec_List_Select" resultType="kr.kosmo.jobkorea.adm.model.processFailModel">
+	<![CDATA[
+	SELECT  lec_id
+			,lec_name
+			,DATE_FORMAT(c_st, '%Y.%m.%d') as startdate
+			,DATE_FORMAT(c_end, '%Y.%m.%d') as enddate
+			,process_day
+			,pre_pnum
+      FROM  tb_lec_info
+      WHERE c_end  <  CURDATE()  
+
+      	]]>
+     <!-- 강의명만 검색해도 되고 강의명과 날짜를 검색해도 되 그러나 날짜만 검색하면 안됨 -->
+     <if test="(searchWord != null) and (!searchWord.equals(''))">
+ 			AND lec_name Like CONCAT('%', #{searchWord}, '%')
+ 		<choose>
+ 			<when test="(startdate != null) and (!startdate.equals('')) and (enddate!= null) and (!enddate.equals(''))">
+     		 AND c_st <![CDATA[ >=  ]]> #{startdate} 
+ 			 AND c_end <![CDATA[ <=  ]]> #{enddate}
+ 			
+ 			</when>
+ 		</choose>
+	 	</if> 
+	 	group by lec_id
+	      LIMIT #{pageIndex}, #{pageSize}  
+	</select> 
+	
+	<!-- 강의 목록 갯수 조회 -->
+	<select id="lec_Cnt_Select" resultType="int">
+	SELECT Count(DISTINCT lec_id)
+	 FROM  tb_lec_info 
+	  <![CDATA[ 
+	   WHERE c_end  <  CURDATE() 
+         
+		]]> 
+		
+ 		<if test="(searchWord != null) and (!searchWord.equals(''))">
+ 			AND lec_name Like CONCAT('%', #{searchWord}, '%')
+ 			<choose>
+ 				<when test="(startdate != null) and (!startdate.equals('')) and (enddate!= null) and (!enddate.equals(''))">
+		     		 AND c_st <![CDATA[ >=  ]]> #{startdate} 
+		 			 AND c_end <![CDATA[ <=  ]]> #{enddate}
+ 			
+ 				</when>
+ 			</choose>
+	 	</if> 
+	 
+	</select>
+
+
+
+	<!-- 통계 데이터 쿼리 -->
+	<select id="lec_Name_List" resultType="kr.kosmo.jobkorea.adm.model.processFailModel">
+	
+	  SELECT li.lec_name,li.lec_id
+	    	,(SELECT count(*) FROM tb_lecstd_info WHERE lec_id = li.lec_id and atd_per  <![CDATA[  > ]]> '80') as pass
+	  		,(SELECT count(*) FROM tb_lecstd_info WHERE lec_id = li.lec_id and atd_per  <![CDATA[  <=]]> '80') as fail
+	  		FROM  tb_lec_info li
+	      WHERE c_end  <![CDATA[ < ]]> CURDATE() 
+	     	    
+	     <if test="(searchWord != null) and (!searchWord.equals(''))">
+	 		AND li.lec_name Like CONCAT('%', #{searchWord}, '%')
+	 		<choose>
+	 			<when test="(startdate != null) and (!startdate.equals('')) and (enddate!= null) and (!enddate.equals(''))">
+	     		 AND c_st <![CDATA[ >=  ]]> #{startdate} 
+	 			 AND c_end <![CDATA[ <=  ]]> #{enddate}
+	 			
+	 			</when>
+	 		</choose>
+		 	</if> 
+		 <if test="(lec_id != null) and (!lec_id.equals(''))">	
+		     and li.lec_id = #{lec_id}
+		 </if>
+		 	
+		 	
+	  group by lec_id
+	  order by lec_id
+		LIMIT 5 
+	  
+	
+	  </select>
+  
+  
+
+ </mapper> 

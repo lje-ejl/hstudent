@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.kosmo.jobkorea.adm.dao.lectureAdviceDao">
+
+	<!-- 전체 강의목록 -->
+	<select id="tutor_lec_list" resultType="kr.kosmo.jobkorea.adm.model.RegisterListControlModel">
+		select
+		lec_id,
+		lec_name,
+		DATE_FORMAT(c_st, '%Y.%m.%d') as c_st,
+		DATE_FORMAT(c_end,'%Y.%m.%d') as c_end
+		from tb_lec_info
+			<if test="(searchWord_lec != null) and (!searchWord_lec.equals(''))">
+				where lec_name Like CONCAT('%',#{searchWord_lec}, '%')
+			</if>
+		<if
+			test="(pageIndex != null) and (!pageIndex.equals('')) and (pageSize != null) and (!pageSize.equals(''))">
+			LIMIT #{pageIndex}, #{pageSize}
+		</if>
+	</select>
+
+
+	<!-- 강의 총 갯수 조회 -->
+	<select id="countList_lec" resultType="int">
+		SELECT COUNT(1) AS tot_cnt
+		FROM tb_lec_info 
+		<if test="(searchWord_lec != null) and (!searchWord_lec.equals(''))">
+			where lec_name Like CONCAT('%',#{searchWord_lec}, '%')
+		</if>
+
+	</select>
+
+
+	<!-- 과목별 상담 학생목록 -->
+	<select id="std_list" resultType="kr.kosmo.jobkorea.tut.model.AdviceModel">
+		select a.adv_id,a.lec_id,a.std_id,u.name as std_name,
+		us.name as
+		tut_name,
+		DATE_FORMAT(a.adv_date, '%Y.%m.%d') as adv_date,
+		a.tut_id,
+		l.lec_name
+		from tb_adv a
+		left join
+		tb_userinfo u
+		on a.std_id
+		=u.loginID
+		left join tb_userinfo us
+		on a.tut_id
+		= us.loginID
+		left join
+		tb_lec_info l
+		on a.lec_id = l.lec_id
+		<where>
+			<if test="(lec_id != null) and (!lec_id.equals(''))">
+			and a.lec_id=#{lec_id}
+			</if>
+			<if test="(searchKey_adv != null) and (!searchKey_adv.equals(''))">
+				<choose>
+					<when
+						test="(searchKey_adv != null) and (searchKey_adv eq 'all'.toString())">
+						and (u.name Like CONCAT('%', #{searchWord_adv}, '%') or
+						u.loginID LIKE CONCAT('%', #{searchWord_adv}, '%'))
+					</when>
+					<when
+						test="(searchKey_adv != null) and (searchKey_adv eq 'stdNm'.toString())">
+						and u.name Like CONCAT('%', #{searchWord_adv}, '%')
+					</when>
+					<when
+						test="(searchKey_adv != null) and (searchKey_adv eq 'stdId'.toString())">
+						and u.loginID LIKE CONCAT('%', #{searchWord_adv}, '%')
+					</when>
+				</choose>
+			</if>
+		</where>
+			order by adv_id desc
+		<if test="(pageIndex != null) and (!pageIndex.equals('')) and (pageSize_adv != null) and (!pageSize_adv.equals(''))">
+			LIMIT #{pageIndex}, #{pageSize_adv}
+		</if>
+	</select>
+
+	<!-- 상담 목록 총 갯수 조회 -->
+	<select id="countList_Advice" resultType="int">
+		SELECT COUNT(1) AS
+		tot_cnt FROM tb_adv a
+		inner join tb_userinfo u
+		on
+		a.std_id =u.loginID
+		<where>
+		<if test="(lec_id != null) and (!lec_id.equals(''))">
+			and lec_id=#{lec_id}
+			</if>
+			<if test="(searchKey_adv != null) and (!searchKey_adv.equals(''))">
+				<choose>
+					<when
+						test="(searchKey_adv != null) and (searchKey_adv eq 'all'.toString())">
+						and (u.name Like CONCAT('%', #{searchWord_adv}, '%') or
+						u.loginID LIKE CONCAT('%', #{searchWord_adv}, '%'))
+					</when>
+					<when
+						test="(searchKey_adv != null) and (searchKey_adv eq 'stdNm'.toString())">
+						and u.name Like CONCAT('%', #{searchWord_adv}, '%')
+					</when>
+					<when
+						test="(searchKey_adv != null) and (searchKey_adv eq 'stdId'.toString())">
+						and u.loginID LIKE CONCAT('%', #{searchWord_adv}, '%')
+					</when>
+				</choose>
+			</if>
+		</where>
+	</select>
+
+
+
+	<!--단건 조회 -->
+	<select id="adv_one" resultType="kr.kosmo.jobkorea.tut.model.AdviceModel">
+		select
+		a.adv_id,a.lec_id,a.std_id,a.tut_id,a.adv_con,a.adv_plc,a.adv_date,
+		DATE_FORMAT(a.up_date, '%Y.%m.%d') as up_date,
+		u.name as std_name,us.name as tut_name,
+		l.lec_name as lec_name,
+		score.last_score as last_score
+		from tb_adv a
+		inner join tb_userinfo u
+		on
+		a.std_id = u.loginID
+		inner join
+		tb_userinfo us
+		on a.tut_id = us.loginID
+		inner join tb_lec_info l
+		on a.lec_id = l.lec_id
+		left join
+		(select std_id,max(test_sco) as last_score
+		from tb_test_user
+		where lec_id=#{lec_id}
+		group by std_id)
+		score
+		on a.std_id=score.std_id
+		where adv_id=#{adv_id}
+	</select>
+
+	<!--상담등록 -->
+	<insert id="adv_register">
+		insert into tb_adv (lec_id,std_id, tut_id, adv_con,
+		adv_plc,adv_date,up_date) values
+		(#{lec_id},#{std_id},#{tut_id},#{adv_con},#{adv_plc},#{adv_date},now())
+	</insert>
+
+	<!--상담 수정 -->
+	<update id="adv_update">
+		update tb_adv set
+		adv_con=#{adv_con},up_date=now(),adv_plc=#{adv_plc},adv_date=#{adv_date}	
+		where
+		adv_id=#{adv_id}
+	</update>
+
+	<!--강의수강 학생 목록 -->
+	<select id="lec_stu_list" resultType="kr.kosmo.jobkorea.tut.model.AdviceModel">
+		SELECT l.lec_id,
+		l.std_id,u.name as std_name
+		FROM tb_lecstd_info l
+		inner join tb_userinfo
+		u
+		on l.std_id=u.loginID
+		where l.lec_id=#{lec_id}
+	</select>
+	<!--상담 삭제 -->
+	<delete id="adv_del">
+		delete from tb_adv where adv_id=#{adv_id}
+	</delete>
+	
+</mapper>

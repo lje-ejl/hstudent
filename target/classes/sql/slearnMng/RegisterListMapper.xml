@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace = "kr.kosmo.jobkorea.std.dao.RegisterListDao" >
+	
+	<select id="selectRegisterList" resultType="kr.kosmo.jobkorea.std.model.RegisterListModel" >
+		select   lec_info.lec_id,
+		         lec_info.lec_name,
+		         DATE_FORMAT( lec_info.c_st, '%Y.%m.%d')  AS c_st, 
+		         DATE_FORMAT( lec_info.c_end, '%Y.%m.%d')  AS c_end,
+		         lec_info.process_day,
+		         lec_info.pre_day,
+		         lec_info.lec_goal,
+		         lec_info.atd_plan,
+		         lec_info.lecrm_name,
+		         lec_info.name as tutor_name,
+		         std_info.std_id,
+		         std_info.srvy_chk,
+		         std_info.apv,
+		         std_info.atd_day
+		from tb_lecstd_info  std_info
+		
+		left join 
+				(
+				  select lec.lec_id,
+				  		lec.lecrm_id,
+				         lec.lec_name,
+				         lec.c_st,
+				         lec.c_end,
+				         lec.process_day,
+				         lec.pre_day,
+				         lec.lec_goal,
+				         lec.atd_plan,
+				         room.lecrm_name,
+				         tutor.name
+				  from   tb_lec_info lec
+				  left join (select lecrm_id,lecrm_name from tb_lecrm) room on lec.lecrm_id = room.lecrm_id
+				  left join (select loginID,name from tb_userinfo) tutor on lec.tutor_id = tutor.loginID
+				) lec_info on lec_info.lec_id = std_info.lec_id
+		where  
+			std_info.std_id=#{loginID}
+		    and std_info.apv = 'Y'
+		
+	</select>
+	
+	<select id="totalCnt" resultType="int">
+		select count(*) as total_cnt 
+		from
+				(
+					select   lec_info.lec_id,
+				        	 lec_info.lec_name,
+				        	 DATE_FORMAT( lec_info.c_st, '%Y.%m.%d')  AS c_st, 
+					         DATE_FORMAT( lec_info.c_end, '%Y.%m.%d')  AS c_end,
+					         lec_info.process_day,
+					         lec_info.pre_day,
+					         lec_info.lec_goal,
+					         lec_info.atd_plan,
+					         lec_info.lecrm_name,
+					         lec_info.name as tutor_name,
+					         std_info.std_id,
+					         std_info.srvy_chk,
+					         std_info.apv,
+					         std_info.atd_day
+					from tb_lecstd_info  std_info
+		
+				left join 
+							(
+				  				select lec.lec_id,
+							         lec.lec_name,
+							         lec.c_st,
+							         lec.c_end,
+							         lec.process_day,
+							         lec.pre_day,
+							         lec.lec_goal,
+							         lec.atd_plan,
+							         room.lecrm_name,
+							         tutor.name
+				 				 from   tb_lec_info lec
+								  left join (select lecrm_id,lecrm_name from tb_lecrm) room on lec.lec_id = room.lecrm_id
+								  left join (select loginID,name from tb_userinfo) tutor on lec.tutor_id = tutor.loginID
+				
+				) lec_info on lec_info.lec_id = std_info.lec_id
+		)tol
+		
+		WHERE tol.std_id= #{loginID}
+	</select>	
+	
+	<select id="countAtdState" resultType="kr.kosmo.jobkorea.std.model.RegisterListModel" >
+		select std_id,lec_id,
+		count(CASE WHEN atd_state = '1' THEN 1 END) as atd_cnt, 
+		count(CASE WHEN atd_state = '2' THEN 1 END) as late_cnt,
+		count(CASE WHEN atd_state = '3' THEN 1 END) as absent_cnt
+		from tb_atd 
+		<where> 
+			std_id = #{loginID}
+			and lec_id=#{lec_id}
+		</where>
+		group by std_id,lec_id
+	</select>
+	
+	<select id="srvyqueList" resultType="kr.kosmo.jobkorea.std.model.SurveyListModel">
+	select que_num, que, que_one, que_two, que_three, que_four, que_five 
+	from tb_srvy_que
+	
+	LIMIT #{pageIndex}, #{pageSize}  
+	</select>
+	
+	<select id="countsrvyList" resultType="int">
+		select count(*) as total_cnt
+		from tb_srvy_que
+	</select>
+	
+	<insert id="srvyReview">
+		insert into tb_srvy_rv (
+		   lec_id
+		  ,lec_rv
+		) VALUES (
+		   #{lec_id}
+		  ,#{lec_rv}
+		)
+	</insert>
+	<!-- tb_srvy  -->
+	
+	<insert id="srvyQueSub">
+								 
+				insert into tb_srvy_std (
+										  lec_id
+										  ,que_num
+										  ,select_num
+										)
+										VALUES
+										(
+		           						 #{lec_id}, 
+										 #{que_num},
+										 #{item}
+		           						 )
+								
+	</insert>
+	
+	<update id="stdSrvy_chk">
+		update tb_lecstd_info set srvy_chk ='Y' 
+		where
+			std_id =#{loginID} 
+			and lec_id = #{lec_id} 
+	</update>
+	
+	<select id="srvyList" resultType="int">
+		select count(*) as total_cnt
+		from(
+				select * from tb_srvy_static
+			) tol
+		where tol.lec_id = #{lec_id}
+	</select>
+	
+	<insert id="srvyCntInsert">
+		insert into tb_srvy_static (
+									   lec_id
+									  ,que_num
+									  ,que_one
+									  ,que_two
+									  ,que_three
+									  ,que_four
+									  ,que_five
+									) VALUES (
+									   #{lec_id} 
+									  ,#{que_num} 
+									  ,#{que_one}   
+									  ,#{que_two}
+									  ,#{que_three}  
+									  ,#{que_four}
+									  ,#{que_five}
+									)
+	</insert>	
+	
+	<update id="srvyCnt">
+		update tb_srvy_static set 
+									que_one = que_one+ #{que_one} ,
+									que_two = que_two + #{que_two} ,
+									que_three = que_three + #{que_three},
+									que_four = que_four + #{que_four},
+									que_five = que_five + #{que_five} 
+		           					
+		where lec_id = #{lec_id}
+		and que_num = #{que_num}	           					
+	</update>
+	
+	
+</mapper>

@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 2020.11.13 임지은 -->
+<!-- Mapper namespace는 나를 담당할 담당 일찐 dao의 위치를 의미! -->
+<!-- 담당 일찐을 제외한 다른 dao의 명령은 듣지않는다!!! -->
+<!-- 매핑이라는건 짝을 짓는것! -->
+
+<mapper namespace="kr.kosmo.jobkorea.std.dao.StdLearnDataDao">
+
+	<select id="myLecture" resultType="kr.kosmo.jobkorea.std.model.StdLearnDataModel">
+		SELECT  l.lec_name
+	      FROM  tb_lec_info AS l
+		 WHERE  l.lec_id = ANY(SELECT lsinfo.lec_id
+		    				  FROM tb_lecstd_info AS lsinfo
+		    				 WHERE lsinfo.std_id=#{loginID} AND lsinfo.apv='Y')
+		   AND  date_add(l.c_end, INTERVAL 1 DAY)<![CDATA[>]]> now()
+       
+	</select>
+
+	<select id="dataList" resultType="kr.kosmo.jobkorea.std.model.StdLearnDataModel">
+		SELECT  ldata.learn_data_id
+		       ,ldata.learn_tit
+		       ,ldata.learn_con
+		       ,DATE_FORMAT( ldata.w_date, '%Y.%m.%d %h:%m') AS w_date
+	      FROM  tb_learn_data as ldata 
+		 WHERE  ldata.lec_id = (SELECT lsinfo.lec_id 
+								  FROM  tb_lecstd_info as lsinfo 
+								 WHERE  lsinfo.std_id =#{loginID} AND lsinfo.apv='Y'
+								   AND lsinfo.lec_id 
+								NOT IN (SELECT linfo.lec_id 
+										  FROM tb_lec_info AS linfo 
+										 WHERE date_add(linfo.c_end, INTERVAL 1 DAY)<![CDATA[<]]> now()))
+      ORDER BY  ldata.learn_data_id DESC
+		 LIMIT  #{pageIndex},#{pageSize}
+
+	</select>
+	
+	<select id="dataCount" resultType="int">
+		SELECT count(*)
+		  FROM tb_learn_data AS ldata
+		  WHERE  ldata.lec_id = (SELECT lsinfo.lec_id 
+								  FROM  tb_lecstd_info as lsinfo 
+								 WHERE  lsinfo.std_id =#{loginID} AND lsinfo.apv='Y'
+								   AND lsinfo.lec_id 
+								NOT IN (SELECT linfo.lec_id 
+										  FROM tb_lec_info AS linfo 
+										 WHERE date_add(linfo.c_end, INTERVAL 1 DAY)<![CDATA[<]]> now()))
+		
+	</select>
+	
+	<select id="dataInfo" resultType="kr.kosmo.jobkorea.std.model.StdLearnDataModel">
+		SELECT  ldata.learn_data_id
+		       ,ldata.learn_tit
+		       ,ldata.learn_con
+		       ,ldata.learn_url
+		       ,ldata.learn_fname
+		       ,DATE_FORMAT( ldata.w_date, '%Y.%m.%d %h:%m') AS w_date
+	      FROM  tb_learn_data AS ldata
+	     WHERE  ldata.learn_data_id = #{learn_data_id} 
+	</select>
+
+</mapper>

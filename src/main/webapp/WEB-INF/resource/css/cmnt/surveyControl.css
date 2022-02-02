@@ -1,0 +1,11 @@
+@CHARSET "UTF-8";
+
+.chartSpace{
+	height : 300px;
+	
+}
+
+#chart {
+    height: 440px;
+    
+}

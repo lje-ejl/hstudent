@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.kosmo.jobkorea.tut.dao.ProgressControlDao">
+   <select id="showLectureList" resultType="kr.kosmo.jobkorea.tut.model.ProgressControlModel">
+      SELECT lec_id,
+      		 lec_name
+      FROM   tb_lec_info
+      WHERE  tutor_id = #{tutor_id}
+   </select>
+   
+   
+   <select id="showLectureInfo" resultType="kr.kosmo.jobkorea.tut.model.ProgressControlModel">
+      SELECT  lec_name
+      		, tutor_name
+      		, DATE_FORMAT( c_st, '%Y.%m.%d') AS c_st
+      		, DATE_FORMAT( c_end,'%Y.%m.%d') AS c_end
+      		, lecrm_name
+      		, max_pnum
+      		, pre_pnum
+      		, lec_id
+        FROM  tb_lec_info
+    LEFT JOIN tb_lecrm
+        ON    tb_lec_info.lecrm_id = tb_lecrm.lecrm_id
+       WHERE  lec_id = #{lec_id}
+   </select>
+   
+   
+   <select id="showWeekplan" resultType="kr.kosmo.jobkorea.tut.model.ProgressControlModel">
+   		SELECT week,
+   			   learn_con,
+   			   learn_goal
+   		FROM   tb_week_plan
+   		WHERE  lec_id = #{lec_id}
+   </select>
+   
+   
+   <select id="countDay" resultType="kr.kosmo.jobkorea.tut.model.ProgressControlModel">
+   		SELECT process_day,
+   			   pre_day,
+   			  (pre_day/process_day)*100 as p_count
+		FROM   tb_lec_info
+		WHERE  lec_id=#{lec_id};
+   </select>
+</mapper>

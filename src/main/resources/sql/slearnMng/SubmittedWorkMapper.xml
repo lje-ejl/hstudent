@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace = "kr.kosmo.jobkorea.std.dao.SubmittedWorkDao" >
+
+	<select id="selectHwkList" resultType="kr.kosmo.jobkorea.std.model.SubmittedWorkModel">
+			SELECT hwk.lec_id, hwk.hwk_id, sub.hwk_id as hwk_id_sub ,hwk.hwk_name, hwk.hwk_con, 
+					DATE_FORMAT( hwk.start, '%Y.%m.%d')  AS start, 
+					DATE_FORMAT( hwk.dead, '%Y.%m.%d')  AS dead, 
+					hwk.hwk_fname, hwk.hwk_url, hwk.hwk_fsize,sub.std_id 
+					,lec.tutor_id, lec.lec_name, tinfo.name as tutor_name
+			FROM tb_hwk hwk
+			left join (select hwk_id, std_id, submit_con from tb_hwk_submit) sub on hwk.hwk_id = sub.hwk_id
+			left join (select lec_id, lec_name,tutor_id from tb_lec_info) lec on hwk.lec_id = lec.lec_id
+			left join (select lec_id, std_id, apv from tb_lecstd_info) lecstd on hwk.lec_id = lecstd.lec_id
+			left join (select loginID, name from tb_userinfo) tinfo on  lec.tutor_id = tinfo.loginID
+			WHERE
+				lecstd.apv = 'Y'
+			AND lecstd.std_id = #{loginID}
+			AND hwk.lec_id = lecstd.lec_id
+         
+         ORDER BY hwk.hwk_id DESC
+		 LIMIT #{pageIndex}, #{pageSize}      
+	</select>
+	
+	<!-- 과제 totalcount 구하기 -->
+	<select id="countHwkList" resultType="int">
+		select count(*) as total_cnt
+		from(
+				SELECT hwk.lec_id, hwk.hwk_id, sub.hwk_id as hwk_id_sub ,hwk.hwk_name, hwk.hwk_con, 
+						DATE_FORMAT( hwk.start, '%Y.%m.%d')  AS start, 
+						DATE_FORMAT( hwk.dead, '%Y.%m.%d')  AS dead, 
+						hwk.hwk_fname, hwk.hwk_url, hwk.hwk_fsize 
+						,lec.tutor_id, lec.lec_name, tinfo.name as tutor_name
+         				 ,lecstd.apv
+         	 			,lecstd.std_id
+		    	FROM tb_hwk hwk
+		    	left join (select hwk_id,submit_con from tb_hwk_submit) sub on hwk.hwk_id = sub.hwk_id
+		    	left join (select lec_id, lec_name,tutor_id from tb_lec_info) lec on hwk.lec_id = lec.lec_id
+		    	left join (select lec_id, std_id, apv from tb_lecstd_info) lecstd on hwk.lec_id = lecstd.lec_id
+		    	left join (select loginID, name from tb_userinfo) tinfo on  lec.tutor_id = tinfo.loginID
+	 	)tol 
+		  <where>		  
+		    AND tol.std_id = #{loginID}		 
+		  </where>
+	</select>
+	
+	<select id="choiceHwkList" resultType="kr.kosmo.jobkorea.std.model.SubmittedWorkModel">
+   		select hwk.lec_id, hwk.hwk_id, sub.hwk_id as hwk_id_sub, hwk.hwk_name, hwk.hwk_con,
+       			 sub.submit_con, sub.submit_fname,sub.submit_url, sub.submit_fsize 
+       				 ,tinfo.name as tutor_name ,lec.lec_name, lecstd.std_id
+		from tb_hwk hwk
+			left join (select hwk_id, std_id, submit_con, submit_fname, submit_url, submit_fsize from tb_hwk_submit) sub on hwk.hwk_id = sub.hwk_id 
+			left join (select lec_id, tutor_id, lec_name from tb_lec_info) lec on hwk.lec_id = lec.lec_id
+			left join (select loginID, name from tb_userinfo) tinfo on  lec.tutor_id = tinfo.loginID
+      		left join (select lec_id, std_id from tb_lecstd_info) lecstd on hwk.lec_id = lecstd.lec_id
+        <where>
+       	  lecstd.std_id = #{loginID}
+         and hwk.hwk_id = #{hwk_id}
+      </where> 
+   </select>
+   
+	<!-- 과제 내용 입력 -->
+	<insert id="insertHwk">
+		INSERT into tb_hwk_submit (
+								       std_id
+								      ,hwk_id
+								      ,submit_con
+								      ,submit_date
+   			 ) VALUES (
+					       #{loginID}
+					      ,#{hwk_id}
+					      ,#{submit_con} 
+					      ,now() 
+					    )
+	</insert>
+
+	<!-- 과제 내용 수정  -->
+	<update id="updateHwk">
+		UPDATE tb_hwk_submit 
+		SET
+				submit_con = #{submit_con}
+			
+		WHERE	hwk_id = #{hwk_id}
+		AND 	std_id = #{loginID}
+	</update>
+	<!-- 과제 첨부파일 저장 및 수정  -->
+	<update id="updateHwkSubFil">
+		UPDATE tb_hwk_submit SET
+					 submit_fname = #{file_nm}
+					,submit_url = #{file_loc}
+					,submit_fsize = #{file_size}
+		where	
+			hwk_id = #{hwk_id}
+		and std_id = #{std_id}
+	</update>
+	
+	<!-- 삭제할 목록 가져오기 -->
+	<select id="deleteList" resultType="kr.kosmo.jobkorea.std.model.SubmittedWorkModel">
+		select std_id, hwk_id, submit_con,submit_fname, submit_url,submit_fsize
+		from tb_hwk_submit
+		where std_id = #{loginID} 
+    	and hwk_id = #{hwk_id}
+	</select>
+	<update id="deleteFileInfo">
+		UPDATE tb_hwk_submit
+		    SET  submit_fname=DEFAULT
+     			,submit_url=DEFAULT
+		        ,submit_fsize=DEFAULT
+		where	
+			hwk_id = #{hwk_id}
+		and std_id = #{std_id}
+	</update>
+	
+	
+	
+	<!-- 과제 내용 및 첨부파일 삭제 -->
+	<delete id="deleteHwkSub">
+			DELETE FROM tb_hwk_submit 
+			WHERE hwk_id=#{hwk_id}
+			and std_id = #{loginID}
+	</delete>
+</mapper>

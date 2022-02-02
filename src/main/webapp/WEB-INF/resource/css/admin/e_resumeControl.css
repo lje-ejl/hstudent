@@ -1,0 +1,39 @@
+@charset "utf-8";
+
+.search {
+	align :right;
+	width : 200px;
+	height: 27px;
+}
+.box1{
+	align : right;
+}
+.searchWord_lec{
+	height: 28px;
+}
+
+.std_List_btn{
+	height: 500px;
+}
+
+.a_pop {
+    height : 50px;
+    padding: 5px 10px;
+    border : 1px solid white;
+    font-size: 1rem;
+    background-color: #7880B0 !important;
+    text-align: center !important;
+    color: white !important;
+}
+.b_pop {
+    height : 50px;
+    padding: 5px 10px;
+    border : 1px solid white;
+    font-size: 1rem;
+    background-color: #8d96c9 !important;
+    text-align: center !important;
+    color: white !important;
+}
+.c_pop{
+	width: 1px !important;
+}

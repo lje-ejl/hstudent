@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.kosmo.jobkorea.adm.dao.EquipmentControlDao">
+
+
+	<!-- 장비 목록 갯수 조회 -->
+	
+	<select id="countListEquip" resultType="int">
+	SELECT Count(DISTINCT equ_name) 
+	  FROM tb_equ
+	<where>
+			<if test="(searchKey != null) and (!searchKey.equals(''))">
+				<choose>
+					<when
+						test="(searchKey != null) and (searchKey eq 'equ_name'.toString())">
+						and equ_name Like CONCAT('%', #{searchWord}, '%')
+					</when>
+				</choose>
+			</if>
+		</where>
+	
+	</select>
+	
+	
+	<!-- 장비 목록 조회 -->
+	<!--  id 에는 다오에서 이 기능 하는 애의 이름 가져와!! -->  <!--  모델로 나올것이라는 것을 밑에서 명명 -->
+	<select id="listEquip" resultType="kr.kosmo.jobkorea.adm.model.EquipmentControlModel">
+	SELECT   equ_id
+			,lecrm_id
+			,equ_name
+			,sum(equ_num) as equ_num
+			,equ_note
+	   FROM tb_equ
+		<where>
+			<if test="(searchKey != null) and (!searchKey.equals(''))">
+				<choose>
+					<when
+						test="(searchKey != null) and (searchKey eq 'equ_name'.toString())">
+						and equ_name Like CONCAT('%', #{searchWord}, '%')
+					</when>
+				</choose>
+			</if>
+		</where>
+	   GROUP BY equ_name
+	   ORDER BY equ_id DESC
+	   LIMIT #{pageIndex}, #{pageSize}
+		
+	</select>
+	
+	 <!-- 과정 단건 조회-->
+	<select id="selectEquip" resultType="kr.kosmo.jobkorea.adm.model.EquipmentControlModel">
+		SELECT equ_id
+              ,lecrm_id
+              ,equ_name
+              ,equ_num
+              ,equ_note
+<!--               ,l.pcnt
+              ,(select count(*) from tb_tcourse t where t.no = l.no) as scnt -->
+		FROM tb_equ
+	   WHERE equ_id = #{equ_id}
+	</select>
+	
+	
+	
+	<!-- 장비 Insert -->
+	<insert id="insertEquip">
+    <selectKey resultType="string" keyProperty="equ_id_new" order="BEFORE">
+        SELECT IFNULL(MAX(equ_id),0) + 1 FROM tb_equ 
+    </selectKey> 
+		INSERT into tb_equ(
+	            equ_id
+	           ,lecrm_id
+	           ,equ_name
+	           ,equ_num
+	           ,equ_note
+	           
+	    ) VALUES (
+	           #{equ_id_new}
+	          ,#{lecrm_id}
+	          ,#{equ_name}
+	          ,#{equ_num}
+	          ,#{equ_note}
+		)
+		
+	
+		
+	</insert>
+	
+	 <!-- 장비 delete -->
+	<delete id="delEquip">
+	    DELETE from tb_equ
+	     WHERE equ_id = #{equ_id}	
+	</delete>
+	
+	
+	
+	  <!-- 과정 Update -->
+	<update id="updateEquip">
+	    UPDATE tb_equ
+	       SET equ_id = #{equ_id}
+              ,lecrm_id = #{lecrm_id}
+              ,equ_name = #{equ_name} 
+              ,equ_num = #{equ_num} 
+              ,equ_note = #{equ_note} 
+	     WHERE equ_id = #{equ_id}
+	</update>	
+	
+	
+</mapper>	

@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 2020.11.13 임지은 -->
+<!-- Mapper namespace는 나를 담당할 담당 일찐 dao의 위치를 의미! -->
+<!-- 담당 일찐을 제외한 다른 dao의 명령은 듣지않는다!!! -->
+<!-- 매핑이라는건 짝을 짓는것! -->
+
+<mapper namespace="kr.kosmo.jobkorea.std.dao.LecListDao">
+
+
+	<select id="listLec" resultType="kr.kosmo.jobkorea.std.model.LecListModel">
+		SELECT  l.lec_name
+		       ,l.max_pnum
+		       ,l.pre_pnum 
+		       ,DATE_FORMAT( l.c_st , '%Y.%m.%d')  AS c_st  
+		       ,DATE_FORMAT( l.c_end, '%Y.%m.%d')  AS c_end
+		       ,l.lec_sort
+		       ,u.name
+		       ,l.lec_id
+	      FROM  tb_lec_info as l left outer join tb_userinfo as u
+		    ON  l.tutor_id = u.loginID
+		  where  l.c_st <![CDATA[>]]> now()
+	         <if test="(searchType != null) and (!searchType.equals(''))">
+	            <choose>
+	               <when test="(searchType != null) and (searchType eq 'name'.toString())">
+	                  and u.name Like CONCAT('%', #{keyword}, '%')
+	               </when>
+	               <when test="(searchType != null) and (searchType eq 'lec_name'.toString())">
+	                  and l.lec_name Like CONCAT('%', #{keyword}, '%')
+	               </when>
+	               <when test="(searchType != null) and (searchType eq 'sort'.toString())">
+	                  and l.lec_sort Like CONCAT('%', #{keyword}, '%')
+	               </when>
+	            </choose>
+	         </if>
+      ORDER BY  l.c_st
+		 LIMIT  #{pageIndex},#{pageSize}
+
+	</select>
+
+	<select id="countListLec" resultType="int">
+		
+		select count(*)
+		  FROM  tb_lec_info as l left outer join tb_userinfo as u
+		    ON  l.tutor_id = u.loginID
+		 <if test="(searchType != null) and (!searchType.equals(''))">
+	            <choose>
+	               <when test="(searchType != null) and (searchType eq 'name'.toString())">
+	                  and u.name Like CONCAT('%', #{keyword}, '%')
+	               </when>
+	               <when test="(searchType != null) and (searchType eq 'lec_name'.toString())">
+	                  and l.lec_name Like CONCAT('%', #{keyword}, '%')
+	               </when>
+	               <when test="(searchType != null) and (searchType eq 'sort'.toString())">
+	                  and l.lec_sort Like CONCAT('%', #{keyword}, '%')
+	               </when>
+	            </choose>
+	         </if>
+	</select>
+	
+	<select id="lecInfo" resultType="kr.kosmo.jobkorea.std.model.LecListModel">
+		SELECT  l.lec_name
+				,l.lec_id
+				,l.lec_sort
+				,l.lec_goal
+				,l.atd_plan
+				,u.name
+				,u.tel
+				,u.mail
+				,lr.lecrm_name
+		  FROM  tb_lec_info as l 
+		  left outer join tb_userinfo as u
+		    ON  l.tutor_id = u.loginID
+		  left outer join tb_lecrm as lr
+		    ON  l.lecrm_id = lr.lecrm_id
+		 where lec_id =#{lec_id}
+	</select>
+	
+	<select id="lecWeekPlan" resultType="kr.kosmo.jobkorea.std.model.LecListModel">
+		SELECT  *
+		  FROM tb_week_plan
+		 where lec_id =#{lec_id}
+	  ORDER BY week+0
+	</select>
+	
+	<insert id="lecApply">
+		insert into tb_lecstd_info (
+					lec_id
+					,std_id
+					,srvy_chk
+					,apv
+					,atd_day
+		) values  ( 
+					 #{lec_id}
+					,#{loginID}
+					,'N'
+					,'N'
+					,0
+		)
+		
+	</insert>
+
+	<update id="lecApply2">
+	
+		<![CDATA[
+		update tb_lec_info set pre_pnum = pre_pnum +1 
+		 where lec_id=#{lec_id} and max_pnum > pre_pnum
+		 ]]>
+		
+	</update>
+	
+	<select id="numCheck" resultType="kr.kosmo.jobkorea.std.model.LecListModel">
+		select pre_pnum,max_pnum 
+		  FROM tb_lec_info 
+		 where lec_id=#{lec_id}
+	</select>
+	
+	<select id="idCheck" resultType="kr.kosmo.jobkorea.std.model.LecListModel">
+		<![CDATA[
+		select lsinfo.lec_id 
+		  FROM tb_lecstd_info as lsinfo
+		 where lsinfo.std_id=#{loginID} 
+		 and lsinfo.lec_id 
+		 not in (select linfo.lec_id 
+		 		   from tb_lec_info as linfo 
+		 		  where now()> linfo.c_end)
+		 		  ]]>
+     
+	</select>
+	
+	<delete id="lecCancel">
+ 		DELETE 
+ 		  FROM tb_lecstd_info 
+ 		 WHERE std_id = #{loginID} and lec_id =#{lec_id}
+		
+	</delete>
+
+	<update id="lecCancel2">
+	
+		<![CDATA[
+		update tb_lec_info set pre_pnum = pre_pnum -1 
+		 where lec_id=#{lec_id} and pre_pnum > 0
+		 ]]>
+		
+	</update>
+	
+	<select id="okCheck" resultType="kr.kosmo.jobkorea.std.model.LecListModel">
+		<![CDATA[
+		select apv 
+		  FROM tb_lecstd_info
+		 where std_id=#{loginID} and lec_id = #{lec_id}
+		 ]]>
+	</select>
+
+
+</mapper>

@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.kosmo.jobkorea.adm.dao.LectureRoomDao">
+
+
+	<!-- 강의실 목록 갯수 조회 -->
+	<select id="countListLecrm" resultType="int">
+	SELECT Count(*) 
+	  FROM tb_lecrm
+	<where>
+			<if test="(searchKey != null) and (!searchKey.equals(''))">
+				<choose>
+					<when
+						test="(searchKey != null) and (searchKey eq 'lecrm_name'.toString())">
+						and lecrm_name Like CONCAT('%', #{searchWord}, '%')
+					</when>
+				</choose>
+			</if>
+		</where>
+	</select>  
+<!-- <if test="(pageIndex != null) and (!pageIndex.equals('')) and (pageSize != null) and (!pageSize.equals(''))"> 
+         LIMIT #{pageIndex}, #{pageSize}
+         </if> -->
+
+	<!-- 강의실 목록 조회 -->
+	<!--  id 에는 다오에서 이 기능 하는 애의 이름 가져와!! -->  <!--  모델로 나올것이라는 것을 밑에서 명명 -->
+ 	<select id="listLecrm" resultType="kr.kosmo.jobkorea.adm.model.LectureRoomModel">
+	SELECT   lecrm_id
+			,lecrm_name
+			,lecrm_size
+			,lecrm_snum
+			,lecrm_note
+	   FROM tb_lecrm
+		<where>
+			<if test="(searchKey != null) and (!searchKey.equals(''))">
+				<choose>
+					<when
+						test="(searchKey != null) and (searchKey eq 'lecrm_name'.toString())">
+						and lecrm_name Like CONCAT('%', #{searchWord}, '%')
+					</when>
+				</choose>
+			</if>
+		</where>
+		<if test="(pageIndex != null) and (!pageIndex.equals('')) and (pageSize != null) and (!pageSize.equals(''))"> 
+         ORDER BY lecrm_name
+         LIMIT #{pageIndex}, #{pageSize}
+         </if>
+	</select>  
+	
+
+	<!-- 과정 단건 조회-->
+	<select id="selectLecrm" resultType="kr.kosmo.jobkorea.adm.model.LectureRoomModel">
+		SELECT lecrm_id
+              ,lecrm_name
+              ,lecrm_size
+              ,lecrm_snum
+              ,lecrm_note
+		FROM tb_lecrm
+	   WHERE lecrm_id = #{lecrm_id}
+	</select>
+	 
+	
+
+	<!--  장비 목록 리스트 뿌리기  -->
+	<select id="listEquip" resultType="kr.kosmo.jobkorea.adm.model.EquipmentControlModel">
+	SELECT   L.lecrm_id
+	 		,E.equ_id
+			,E.equ_name
+			,E.equ_num
+			,E.equ_note
+	  FROM tb_equ E INNER JOIN tb_lecrm L
+	  							 ON E.lecrm_id = L.lecrm_id
+	 WHERE E.lecrm_id LIKE #{lecrm_id}
+	 LIMIT #{pageIndex}, #{pageSize}  
+	 </select>  
+	 
+
+
+	 
+	 <!-- 장비 목록 수 구하기 -->
+	<select id="countListEquip" resultType="int">
+	 SELECT count(E.equ_id)
+	   FROM tb_equ E INNER JOIN tb_lecrm L
+	  							 ON E.lecrm_id = L.lecrm_id
+	  WHERE E.lecrm_id LIKE #{lecrm_id}
+	 </select> 
+	 
+	 
+	 
+	 <!-- 강의 Insert -->
+	<insert id="insertLecrm">
+    <selectKey resultType="string" keyProperty="lecrm_id" order="BEFORE">
+        SELECT IFNULL(MAX(lecrm_id),0) + 1
+        FROM tb_lecrm 
+    </selectKey> 
+		INSERT INTO tb_lecrm(
+	            lecrm_id
+	           ,lecrm_name
+	           ,lecrm_size
+	           ,lecrm_snum
+	           ,lecrm_note
+	           
+	    ) SELECT 
+	           #{lecrm_id}
+	          ,#{lecrm_name}
+	          <if test="lecrm_size != null">
+	          ,#{lecrm_size}
+	          </if>
+	          <if test="lecrm_snum != null">
+	          ,#{lecrm_snum}
+	           </if>
+	           <if test="lecrm_snum = null">
+	          ,0
+	          </if>
+	           <if test="lecrm_note != null">
+	          ,#{lecrm_note}
+	          </if>
+		FROM tb_lecrm
+		WHERE NOT EXISTS 
+		(SELECT 0 FROM tb_lecrm WHERE lecrm_name=#{lecrm_name}) LIMIT 1;
+	 
+	 </insert> 
+	 
+	 
+	 
+	 
+	 <!-- 과정 Update -->
+	<update id="updateLecrm">
+	    UPDATE tb_lecrm
+	       SET lecrm_id = #{lecrm_id}
+              ,lecrm_name = #{lecrm_name}
+              ,lecrm_size = #{lecrm_size} 
+              ,lecrm_snum = #{lecrm_snum} 
+              ,lecrm_note = #{lecrm_note} 
+	     WHERE lecrm_id = #{lecrm_id}
+	</update>	 
+	 
+	 
+	 
+	 <!-- 과정 delete -->
+	<delete id="delLecrm">
+	    DELETE from tb_lecrm
+	     WHERE lecrm_id = #{lecrm_id}	
+	</delete> 
+	
+	
+
+
+
+</mapper>

@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.kosmo.jobkorea.adm.dao.testPersonControlDao">
+
+	<!--  강의 시험 정보 조회  -->
+	<select id = "list_lec" resultType ="kr.kosmo.jobkorea.adm.model.testPersonControlModel">
+	<![CDATA[
+	select distinct(te.test_id),
+					       l.lec_name,
+					       (CASE
+					       WHEN  l.c_end < NOW() THEN '강의 완료'
+					       ELSE '강의중'
+					       END
+					       )AS c_end,
+					       DATE_FORMAT(l.c_st, '%Y.%m.%d') as c_st,
+					       te.test_name,
+					       te.lec_id, 
+					       DATE_FORMAT(te.test_start, '%Y.%m.%d') as test_start,
+					   	   te.test_end,
+					       l.pre_pnum,
+					       (select COUNT(test_sco)
+					        FROM  tb_test_user tu
+					        where tu.test_id = te.test_id) sco,
+					       (l.pre_pnum-(select COUNT(test_sco)
+					        FROM  tb_test_user tu
+        					where tu.test_id = te.test_id)) as minNum
+       FROM tb_test te
+       LEFT OUTER JOIN tb_lec_info l ON te.lec_id = l.lec_id
+       LEFT OUTER JOIN tb_lecstd_info le ON l.lec_id = le.lec_id
+       ]]>
+		<if test ="!(searchWord eq 'all'.toString())" >
+		WHERE lec_name = #{searchWord}
+		</if>
+	   <if test="(pageIndex != null) and (!pageIndex.equals('')) and (pageSize != null) and (!pageSize.equals(''))">
+         LIMIT #{pageIndex}, #{pageSize}
+      </if>
+	</select>
+	
+	<!--  강의 시험 정보 조회  -->
+	<select id="cnt_list_lec" resultType="int">
+	  SELECT COUNT(distinct(te.test_id)) as total_cnt
+       FROM tb_test te
+       LEFT OUTER JOIN tb_lec_info l ON te.lec_id = l.lec_id
+       LEFT OUTER JOIN tb_lecstd_info le ON l.lec_id = le.lec_id
+ <where>
+			<if test="(searchKey != null) and (!searchKey.equals(''))">
+				<choose>
+	  				<when
+						test="(searchKey != null) and (searchKey eq 'all'.toString())">
+						and lec_name Like CONCAT('%', #{searchWord}, '%')
+					</when>
+				</choose>
+			</if>
+		</where> 
+	</select>
+	
+	<!-- 학생 단건 조회 -->
+	<select id="std_test" resultType="kr.kosmo.jobkorea.adm.model.testPersonControlModel">
+   	select ui.std_num, 
+   			  ui.name,
+		      tu.test_sco
+	from tb_test_user tu
+	left outer join tb_userinfo ui  on ui.loginId = tu.std_id 
+    left outer join tb_lec_info li on tu.lec_id = li.lec_id
+	where tu.test_id = #{test_id}
+    and li.lec_id = #{lec_id}
+	ORDER BY ui.name;
+	</select> 
+
+<select id="cnt_std_test" resultType="int">
+	  	select COUNT(ui.loginId) as total_cnt
+		from tb_test_user tu
+		left outer join tb_userinfo ui  on ui.loginId = tu.std_id 
+    	left outer join tb_lec_info li on tu.lec_id = li.lec_id
+		where tu.test_id = #{test_id}
+      	and li.lec_id = #{lec_id}
+		ORDER BY ui.name;
+	</select> 
+</mapper>

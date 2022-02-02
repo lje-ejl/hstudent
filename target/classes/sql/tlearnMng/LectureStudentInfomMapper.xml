@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.kosmo.jobkorea.tut.dao.LectureStudentInfoDao">
+
+   <select id="showLectureList" resultType="kr.kosmo.jobkorea.tut.model.LectureStudentInfoModel">
+      SELECT lec_id,
+      		 lec_name
+      FROM   tb_lec_info
+      WHERE  tutor_id = #{tutor_id}
+      ORDER BY lec_id DESC
+   </select>
+
+
+
+   <select id="showLectureInfo" resultType="kr.kosmo.jobkorea.tut.model.LectureStudentInfoModel">
+      SELECT  lec_name
+      		, tutor_name
+      		, DATE_FORMAT( c_st, '%Y.%m.%d') AS c_st
+      		, DATE_FORMAT( c_end,'%Y.%m.%d') AS c_end
+      		, lecrm_name
+      		, max_pnum
+      		, pre_pnum
+      		, lec_id
+        FROM  tb_lec_info
+    LEFT JOIN tb_lecrm
+        ON    tb_lec_info.lecrm_id = tb_lecrm.lecrm_id
+       WHERE  lec_id = #{lec_id}
+   </select>
+   
+   
+   
+   <select id="showStudentsInfo" resultType="kr.kosmo.jobkorea.tut.model.LectureStudentInfoModel">
+       SELECT b.name,
+       		  b.std_num,
+       		  b.tel,
+       		  DATE_FORMAT( b.birth, '%Y.%m.%d') AS birth,
+       		  a.srvy_chk,
+       		  MAX(c.test_sco) as test_sco,
+       		  a.apv,
+       		  b.loginID,
+       		  a.lec_id,
+       		  a.std_id
+		 FROM            tb_lecstd_info a
+		 LEFT OUTER JOIN tb_userinfo b
+		              ON a.std_id=b.loginID
+         LEFT OUTER JOIN tb_test_user c
+         			  ON b.loginID=c.std_id
+		WHERE a.lec_id=#{lec_id}
+	 GROUP BY a.std_id
+   </select>
+   
+<!-- 승인하면 Y로바뀌고 출석부에 추가하기 -->   
+   
+   <select id="approveUpdate1" resultType="kr.kosmo.jobkorea.tut.model.LectureStudentInfoModel">
+   		UPDATE tb_lecstd_info
+		SET    apv="Y"
+		WHERE  std_id=#{std_id}
+   </select>
+   
+   <select id="attendanceUpdate1" resultType="kr.kosmo.jobkorea.tut.model.LectureStudentInfoModel">
+   		INSERT INTO tb_atd(lec_id,
+   						   std_id,
+   						   len_date,
+   						   atd_state)
+		VALUES (#{lec_id},
+				#{std_id},
+				NOW(),
+				'0')
+   </select>
+   
+   
+   
+<!-- 취소하면 N으로 바뀌고 출석부에서 삭제하기 -->   
+   <select id="approveUpdate2" resultType="kr.kosmo.jobkorea.tut.model.LectureStudentInfoModel">
+   		UPDATE tb_lecstd_info
+		SET    apv="N"
+		WHERE  std_id=#{std_id}
+   </select>
+   
+   
+   <select id="attendanceUpdate2" resultType="kr.kosmo.jobkorea.tut.model.LectureStudentInfoModel">
+   		DELETE FROM tb_atd
+		WHERE lec_id=#{lec_id} AND std_id=#{std_id}
+   </select>
+   
+   <select id="deleteStudent" resultType="kr.kosmo.jobkorea.tut.model.LectureStudentInfoModel">
+   		DELETE FROM tb_lecstd_info
+		WHERE lec_id=#{lec_id} AND std_id=#{std_id}
+   </select>
+   
+   <select id="decreasePrePnum" resultType="kr.kosmo.jobkorea.tut.model.LectureStudentInfoModel">
+   		update tb_lec_info
+		set    pre_pnum = pre_pnum-1
+		where  lec_id = #{lec_id}
+   </select>
+<!-- 출석부삭제 끝 -->
+
+
+
+
+ <!--강의 기간이 끝나면 모든 학생 apv값 N으로 바꾸기 -->
+	<update id="setApv">
+		UPDATE tb_lecstd_info
+		SET    apv='N'
+		WHERE  lec_id = #{lec_id}
+	</update>
+
+
+
+
+
+</mapper>
